@@ -1,0 +1,12 @@
+p {
+    color:white;
+    background-color: red;
+    font: 250%;
+}
+p {
+    color: plum;
+    background-color:black;
+    font-size: 200%
+}
+h1 { color:greenyellow; background-color: grey }
+h2 {color:greenyellow; background-color: grey}
