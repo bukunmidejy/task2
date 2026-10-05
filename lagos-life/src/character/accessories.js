@@ -9,7 +9,7 @@ const beadMat = c => new THREE.MeshStandardMaterial({ color: c, roughness: 0.35 
 const V = (...a) => new THREE.Vector3(...a);
 
 export function buildAccessories(ch) {
-  const s = ch.state.accessories, rig = ch.rig, J = rig.J, L = rig.L, f = ch.state.face, out = [], H = ch.headGroup;
+  const s = ch.state.accessories, rig = ch.rig, J = rig.J, L = rig.L, f = ch.faceA || ch.state.face, out = [], H = ch.headGroup;
   const add = (parent, mesh) => { parent.add(mesh); mesh.castShadow = true; out.push(mesh); return mesh; };
   const tube = (pts, r, mat, closed = false, seg = 64) => new THREE.Mesh(new THREE.TubeGeometry(new THREE.CatmullRomCurve3(pts, closed), seg, r, 6, closed), mat);
   // ---- earrings (+ lobe anchor in ear-group space)

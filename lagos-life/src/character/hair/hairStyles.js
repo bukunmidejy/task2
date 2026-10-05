@@ -80,23 +80,31 @@ function curtain(ctx, r, L, P, o = {}) {
 export function generateHair(styleId, hair, ctx, density = 1) {
   const R = ctx.rng, out = { ribbons: [], tubes: [], cards: [], coils: [], scalp: { mode: 'dark', alpha: 0.85 }, edges: hair.edges };
   const len = hair.length, vol = hair.volume, S = Math.max(0.35, density);
+  // Loose styles: SOLID tapered clumps (+ a few flyaway cards). Clumps carry streak texture and silky anisotropic shine.
   const flow = o => {
-    const N = Math.round(o.count * S), L0 = o.L;
-    for (let i = 0; i < N; i++) {
-      const r = ctx.randomRoot(0.02), x = r.p[0], wf = Math.max(0, Math.cos(r.th)) * sm(0.2, 1.0, r.ph + 0.2), sgn = Math.sign(x - o.partX) || 1;
-      const sideDrive = o.side ? (sgn > 0 ? 1.3 : 0.7) : 1;
-      const d0 = norm([sgn * wf * 0.9 * sideDrive, -0.45, -0.25 * wf]); const dd = add(d0, r.n, 0.45);
-      const L = L0 * (0.9 + 0.2 * R()) * (o.layer ? 0.75 + 0.3 * sm(-0.5, 0.7, r.ph) * 0 + 0.25 * (1 - Math.abs(Math.sin(r.th))) : 1);
-      out.ribbons.push({ pts: curtain(ctx, r, L, 16, { vol: vol * 0.6 + 0.2, wave: o.wave, ph: R() * 6, freq: o.freq, back: o.side ? 0.1 : 0.45 }), rigid: 2, stiff: Math.max(o.stiff, 0.25), w: o.w * (0.8 + 0.4 * R()), roll: (R() - 0.5) * 2.4, wave: o.wave });
+    const nClump = Math.round((o.clumps ?? 240) * S), L0 = o.L;
+    for (let i = 0; i < nClump; i++) {
+      const r = ctx.randomRoot(0.02), L = L0 * (0.92 + 0.14 * R()) * (o.curl ? 1.22 : 1);
+      let pts = curtain(ctx, r, L, o.curl ? 30 : 20, { vol: vol * 0.7 + 0.3, back: o.side ? 0.1 : 0.45, frontP: o.frontP, spread: 0.02 });
+      if (o.curl) pts = helix(pts, o.curl, i);
+      else if (o.wave) pts = pts.map((p, k) => [p[0] + o.wave * Math.sin(k * 0.8 + i), p[1], p[2] + o.wave * 0.6 * Math.sin(k * 0.8 + i * 1.7)]);
+      out.tubes.push({ pts, rigid: 2, stiff: o.stiff, rad: (o.rad || 0.0115) * (0.85 + 0.3 * R()), kind: 'clump', tapered: false, ends: false });
     }
+    for (let i = 0; i < Math.round(70 * S); i++) { // short flyaways that break the silhouette near the head
+      const r = ctx.randomRoot(0.02);
+      out.ribbons.push({ pts: curtain(ctx, r, Math.min(0.14, L0 * 0.3), 10, { vol: vol * 0.7 + 0.45, back: o.side ? 0.1 : 0.45, spread: 0.035 }), rigid: 2, stiff: o.stiff, w: 0.011, roll: (R() - 0.5) * 2.4 });
+    }
+    out.scalp = { mode: 'dark', alpha: 0.95, part: o.side ? 0.028 : 0 };
   };
+  // ringlet curls: helical offsets around the guide, growing toward the ends
+  const helix = (pts, amp, k0) => pts.map((p, i) => { const t = i / (pts.length - 1), a = i * 1.15 + k0, A = amp * (0.25 + 0.75 * t); return [p[0] + Math.cos(a) * A, p[1] - Math.abs(Math.sin(a * 0.5)) * A * 0.5, p[2] + Math.sin(a) * A]; });
   switch (styleId) {
-    case 'silkpress': flow({ count: 1500, L: 0.2 + 0.5 * len, partX: 0, w: 0.026, stiff: 0.05 }); break;
-    case 'bonestraight': flow({ count: 1500, L: 0.3 + 0.6 * len, partX: 0, w: 0.026, stiff: 0.03 }); break;
-    case 'bob': flow({ count: 1500, L: 0.15 + 0.1 * len, partX: 0.008, w: 0.026, stiff: 0.09, layer: false, side: true }); break;
-    case 'closurewig': flow({ count: 1500, L: 0.3 + 0.45 * len, partX: 0, w: 0.026, stiff: 0.04, wave: 0.02, freq: 0.9 }); break;
-    case 'frontalwig': flow({ count: 1500, L: 0.35 + 0.5 * len, partX: 0.03, w: 0.026, stiff: 0.04, side: true, wave: 0.012, freq: 1.0 }); break;
-    case 'curlywig': flow({ count: 1600, L: 0.2 + 0.35 * len, partX: 0, w: 0.032, stiff: 0.2, wave: 0.02, freq: 0.7 }); break;
+    case 'silkpress': flow({ clumps: 260, L: 0.2 + 0.5 * len, stiff: 0.55, wave: 0.0035, rad: 0.0115 }); break;
+    case 'bonestraight': flow({ clumps: 260, L: 0.3 + 0.6 * len, stiff: 0.55, rad: 0.0115 }); break;
+    case 'bob': flow({ clumps: 230, L: 0.17 + 0.06 * len, stiff: 0.6, rad: 0.0125, side: true }); break;
+    case 'closurewig': flow({ clumps: 260, L: 0.3 + 0.45 * len, stiff: 0.55, wave: 0.006 }); break;
+    case 'frontalwig': flow({ clumps: 260, L: 0.35 + 0.5 * len, stiff: 0.55, side: true, wave: 0.008 }); break;
+    case 'curlywig': flow({ clumps: 330, L: 0.2 + 0.3 * len, stiff: 0.6, curl: 0.016, rad: 0.0085 }); break;
     case 'ponytail': {
       const A = [0, 0.096, -0.092], N = Math.round(380 * S);
       for (let i = 0; i < N; i++) {

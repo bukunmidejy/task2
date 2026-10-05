@@ -36,7 +36,7 @@ const g = (id, name, slot, cats, price, fabric, parts, colors = NEUTRALS, extra 
 export const GARMENTS = [
   // ---- tops
   g('tee', 'Classic tee', 'top', ['casual', 'home', 'gym'], 8500, 'jersey', [{ type: 'wrap', torso: { hem: 'hip', neck: 'crew', sleeve: 0.25, ease: { bust: 0.012, waist: 0.02, hip: 0.025, arm: 0.015 } } }]),
-  g('croptop', 'Crop top', 'top', ['casual', 'nightlife', 'beach'], 9500, 'jersey', [{ type: 'wrap', torso: { hem: 'crop', neck: 'scoop', neckDepth: 0.35, sleeve: 0, ease: { bust: 0.006, waist: 0.01, hip: 0.01, arm: 0.01 } } }]),
+  g('croptop', 'Crop top', 'top', ['casual', 'nightlife', 'beach'], 9500, 'jersey', [{ type: 'wrap', torso: { hem: 'crop', neck: 'scoop', neckDepth: 0.35, sleeve: 0, strap: 0.055, ease: { bust: 0.006, waist: 0.01, hip: 0.01, arm: 0.01 } } }]),
   g('tank', 'Fitted tank', 'top', ['casual', 'gym', 'home'], 7000, 'jersey', [{ type: 'wrap', torso: { hem: 'hip', neck: 'scoop', sleeve: 0, strap: 0.045, ease: { bust: 0.006, waist: 0.008, hip: 0.01, arm: 0.01 } } }]),
   g('sportsbra', 'Sports bra', 'top', ['gym', 'beach'], 12000, 'jersey', [{ type: 'wrap', torso: { hem: 'bra', neck: 'scoop', neckDepth: 0.4, sleeve: 0, strap: 0.04, ease: { bust: 0.004, waist: 0.004, hip: 0.004, arm: 0.004 } } }]),
   g('bikinitop', 'Bikini top', 'top', ['beach'], 11000, 'jersey', [{ type: 'wrap', torso: { hem: 'bra', neck: 'halter', neckDepth: 0.5, sleeve: -1, strap: 0.012, ease: { bust: 0.004, waist: 0.003, hip: 0.003, arm: 0.003 } } }], BRIGHTS),
@@ -46,8 +46,8 @@ export const GARMENTS = [
   g('senator', 'Senator top', 'top', ['traditional', 'corporate', 'church'], 42000, 'linen', [{ type: 'wrap', torso: { hem: 'thigh', neck: 'high', sleeve: 1, ease: { bust: 0.035, waist: 0.04, hip: 0.04, arm: 0.03 } } }], NEUTRALS, { fabrics: ['linen', 'cotton', 'brocade'] }),
   g('lounge', 'Lounge tee', 'top', ['home'], 6000, 'jersey', [{ type: 'wrap', torso: { hem: 'thigh', neck: 'crew', sleeve: 0.25, ease: { bust: 0.03, waist: 0.04, hip: 0.045, arm: 0.03 } } }]),
   // ---- outer
-  g('blazer', 'Tailored blazer', 'outer', ['corporate', 'date', 'church'], 58000, 'twill', [{ type: 'wrap', torso: { hem: 'thigh', neck: 'v', neckDepth: 0.55, sleeve: 1, frontOpen: 0.04, ease: { bust: 0.04, waist: 0.045, hip: 0.05, arm: 0.035 } } }], NEUTRALS, { fabrics: ['twill', 'linen'] }),
-  g('denimjacket', 'Denim jacket', 'outer', ['casual', 'nightlife'], 34000, 'denim', [{ type: 'wrap', torso: { hem: 'hip', neck: 'v', neckDepth: 0.5, sleeve: 1, frontOpen: 0.05, ease: { bust: 0.04, waist: 0.04, hip: 0.04, arm: 0.035 } } }], DENIM),
+  g('blazer', 'Tailored blazer', 'outer', ['corporate', 'date', 'church'], 58000, 'twill', [{ type: 'wrap', torso: { hem: 'thigh', neck: 'v', neckDepth: 0.55, sleeve: 1, frontOpen: 0.04, ease: { bust: 0.026, waist: 0.03, hip: 0.034, arm: 0.016 } } }], NEUTRALS, { fabrics: ['twill', 'linen'] }),
+  g('denimjacket', 'Denim jacket', 'outer', ['casual', 'nightlife'], 34000, 'denim', [{ type: 'wrap', torso: { hem: 'hip', neck: 'v', neckDepth: 0.5, sleeve: 1, frontOpen: 0.05, ease: { bust: 0.026, waist: 0.026, hip: 0.028, arm: 0.016 } } }], DENIM),
   g('agbada', 'Agbada', 'outer', ['traditional', 'wedding'], 95000, 'brocade', [
     { type: 'wrap', torso: { hem: 'hip', neck: 'boat', neckDepth: 0.3, sleeve: 1, sleeveFlare: 0.075, ease: { bust: 0.05, waist: 0.06, hip: 0.065, arm: 0.04 } } },
     { type: 'skirt', waist: 'hip', hem: 'ankle', flare: 0.1, ease: 0.07, profile: 'aline' }], BRIGHTS, { fabrics: ['brocade', 'asooke', 'cotton'] }),

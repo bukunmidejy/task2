@@ -4,7 +4,7 @@
 import * as THREE from 'three';
 import { HAIR_COLORS } from '../../data/params.js';
 import { makeCtx, generateHair } from './hairStyles.js';
-import { strandTex, coilTex, braidTex, locTex, stubbleTex } from './hairTextures.js';
+import { strandTex, coilTex, braidTex, locTex, stubbleTex, clumpTex } from './hairTextures.js';
 import { mulberry32 } from '../../core/rng.js';
 
 const _v = new THREE.Vector3(), _m = new THREE.Matrix4(), _q = new THREE.Quaternion();
@@ -17,6 +17,7 @@ export class HairSystem {
     this.chains = []; this.wet = 0; this.windVec = new THREE.Vector3(); this.lastRootPos = new THREE.Vector3(); this.rootVel = new THREE.Vector3(); this.rootAcc = new THREE.Vector3();
     this.mats = {}; this.time = 0; this.style = null;
   }
+  setEnv(map, k) { this.env = { map, k }; for (const m of Object.values(this.mats)) if (m.isMeshPhysicalMaterial) { m.envMap = map; m.envMapIntensity = k; m.needsUpdate = true; } }
   clear() {
     for (const g of [this.rigidGroup, this.simGroup]) for (const o of [...g.children]) { g.remove(o); o.geometry?.dispose(); }
     this.chains = []; this.colorTargets = [];
@@ -43,8 +44,10 @@ export class HairSystem {
     if (kind === 'strand') m = new THREE.MeshPhysicalMaterial({ map: strandTex(), alphaTest: 0.38, alphaToCoverage: true, side: THREE.DoubleSide, roughness: 0.75, anisotropy: 0, specularIntensity: 0.05, sheen: 0.04, sheenRoughness: 0.5, sheenColor: new THREE.Color(0.18, 0.15, 0.13), vertexColors: true });
     else if (kind === 'coil' || kind === 'twist') m = new THREE.MeshPhysicalMaterial({ map: coilTex(kind), alphaTest: 0.35, alphaToCoverage: true, side: THREE.DoubleSide, roughness: 0.9, specularIntensity: 0.12, sheen: 0.05, sheenRoughness: 0.7, sheenColor: new THREE.Color(0.15, 0.12, 0.1), vertexColors: true });
     else if (kind === 'braid') { const t = braidTex(); m = new THREE.MeshPhysicalMaterial({ map: t.map, bumpMap: t.bump, bumpScale: 2.0, roughness: 0.5, specularIntensity: 0.3, sheen: 0.05, sheenRoughness: 0.5, sheenColor: new THREE.Color(0.18, 0.15, 0.13), vertexColors: true }); }
+    else if (kind === 'clump') { const t = clumpTex(); m = new THREE.MeshPhysicalMaterial({ map: t.map, bumpMap: t.bump, bumpScale: 1.2, roughness: 0.42, anisotropy: 0.8, specularIntensity: 0.28, clearcoat: 0, sheen: 0.04, sheenColor: new THREE.Color(0.2, 0.17, 0.15), vertexColors: true }); }
     else if (kind === 'loc') { const t = locTex(); m = new THREE.MeshPhysicalMaterial({ map: t.map, bumpMap: t.bump, bumpScale: 2.5, roughness: 0.8, specularIntensity: 0.15, sheen: 0.05, sheenColor: new THREE.Color(0.15, 0.12, 0.1), vertexColors: true }); }
     else if (kind === 'scalp') m = new THREE.MeshStandardMaterial({ map: stubbleTex(), vertexColors: true, transparent: true, roughness: 0.85, depthWrite: false, polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -2 });
+    if (this.env && m.isMeshPhysicalMaterial) { m.envMap = this.env.map; m.envMapIntensity = this.env.k; }
     return (this.mats[kind] = m);
   }
   // ---------------------------------------------------------------- scalp shell
@@ -60,6 +63,7 @@ export class HairSystem {
       else a = sm(hl - 0.01, hl + 0.06, ph) * (sc.alpha ?? 0.9);
       if (ph > 1.45) a = sc.alpha ?? 1;
       alpha[i] = a * (stub ? 1 : 0.92);
+      if (sc.part !== undefined && P[i * 3 + 2] > -0.02 && ph > 0.35) alpha[i] *= sm(0.0011, 0.0035, Math.abs(P[i * 3] - sc.part));
     }
     const pos = [], nor = [], uv = [], colr = [], idx = []; const map = new Map();
     const I = hd.index, bc = col.base.clone().multiplyScalar(0.7), off = stub ? 0.0018 : 0.0008;
@@ -117,15 +121,15 @@ export class HairSystem {
     this.chains.push({ kind: 'ribbon', mesh, meta, local: Float32Array.from(pts.flat()), total });
   }
   buildTubes(list, col, rng) {
-    for (const kind of ['braid', 'loc']) {
+    for (const kind of ['braid', 'loc', 'clump']) {
       const sub = list.filter(t => t.kind === kind); if (!sub.length) continue;
       const pts = [], meta = []; let total = 0;
-      for (const r of sub) { meta.push({ start: total, n: r.pts.length, rigid: r.rigid, stiff: r.stiff, rad: r.rad, tapered: r.tapered, ends: r.ends, beads: r.beads }); total += r.pts.length; pts.push(...r.pts); }
+      for (const r of sub) { meta.push({ start: total, n: r.pts.length, rigid: r.rigid, stiff: r.stiff, rad: r.rad, tapered: r.tapered, ends: r.ends, beads: r.beads, clump: kind === 'clump', root: r.root }); total += r.pts.length; pts.push(...r.pts); }
       const NS = 6, g = new THREE.BufferGeometry(), nv = total * NS, pos = new Float32Array(nv * 3), nor = new Float32Array(nv * 3), uv = new Float32Array(nv * 2), colr = new Float32Array(nv * 3), idx = [];
       meta.forEach(m => {
-        const jit = 0.85 + 0.3 * rng();
+        const jit = 0.82 + 0.3 * rng(), hlC = col.highlight > 0 && rng() < col.highlight * 0.5;
         for (let i = 0; i < m.n; i++) {
-          const t = i / (m.n - 1); const c = col.base.clone().lerp(col.tip, Math.pow(t, 2)).multiplyScalar(jit);
+          const t = i / (m.n - 1); const c = col.base.clone().lerp(col.tip, Math.pow(t, 2)).multiplyScalar(jit * (m.clump ? 0.55 + 0.6 * t : 1)); if (hlC) c.lerp(col.hl, 0.5 * t);
           let bead = 0; if (m.beads) for (const bt of [0.32, 0.5, 0.68, 0.84]) bead = Math.max(bead, Math.exp(-Math.pow((t - bt) / 0.012, 2)));
           if (bead > 0.3) c.set('#d9a441'); m.beadAt = m.beadAt || [];
           for (let s = 0; s < NS; s++) { const k = (m.start + i) * NS + s; uv[k * 2] = s / NS; colr.set([c.r, c.g, c.b], k * 3); }
@@ -248,13 +252,13 @@ export class HairSystem {
           n.addScaledVector(t, -n.dot(t)).normalize(); prevN.copy(n); bn.crossVectors(t, n);
           if (i > 0) arc += Math.hypot(P[k] - P[k - 3], P[k + 1] - P[k - 2], P[k + 2] - P[k - 1]);
           const tt = i / (m.n - 1); let r = m.rad;
-          if (m.tapered) r *= 0.5 + 0.5 * sm(0, 0.14, tt); if (m.ends && tt > 0.95) r *= 1 - (tt - 0.95) / 0.05 * 0.55;
+          if (m.clump) r *= (0.55 + 0.45 * sm(0, 0.12, tt)) * (1 - 0.8 * Math.pow(tt, 1.7)); if (m.tapered) r *= 0.5 + 0.5 * sm(0, 0.14, tt); if (m.ends && tt > 0.95) r *= 1 - (tt - 0.95) / 0.05 * 0.55;
           if (m.beads) for (const bt of [0.32, 0.5, 0.68, 0.84]) r *= 1 + 0.7 * Math.exp(-Math.pow((tt - bt) / 0.012, 2));
           for (let s = 0; s < NS; s++) {
             const ang = (s / NS) * Math.PI * 2, cs = Math.cos(ang), sn = Math.sin(ang), vi = ((m.start + i) * NS + s) * 3;
             const nx = n.x * cs + bn.x * sn, ny = n.y * cs + bn.y * sn, nz = n.z * cs + bn.z * sn;
             pos[vi] = P[k] + nx * r; pos[vi + 1] = P[k + 1] + ny * r; pos[vi + 2] = P[k + 2] + nz * r; nor[vi] = nx; nor[vi + 1] = ny; nor[vi + 2] = nz;
-            uv[((m.start + i) * NS + s) * 2 + 1] = arc / 0.030;
+            uv[((m.start + i) * NS + s) * 2 + 1] = arc / (m.clump ? 0.12 : 0.030);
           }
         }
       }

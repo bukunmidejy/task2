@@ -30,7 +30,7 @@ export function skinPalette(skin) {
   const d = clamp(skin.depth, 0, 1);
   const L = lerp(0.74, 0.27, Math.pow(d, 0.88));
   const hue = u.h + (skin.tint || 0) * 8;
-  const C = (0.034 + 0.055 * Math.sin(Math.PI * Math.pow(d, 0.7) * 0.9 + 0.2)) * u.c; // rich mid-tones, never zero chroma
+  const C = (0.034 + 0.050 * Math.sin(Math.PI * Math.pow(d, 0.7) * 0.9 + 0.2)) * u.c * 0.93; // rich mid-tones, never zero chroma
   const mk = (dL, dC, dH) => oklch2lin(clamp(L + dL, 0.05, 0.95), Math.max(0.028, C * dC), hue + dH);
   const p = {
     base: mk(0, 1, 0),

@@ -3,7 +3,7 @@
 import * as THREE from 'three';
 
 const damp = (a, b, k, dt) => a + (b - a) * (1 - Math.exp(-k * dt));
-export const CAMERA_MODES = ['creator', 'full', 'face', 'front', 'side', 'back', 'third', 'mirror', 'cinematic', 'selfie'];
+export const CAMERA_MODES = ['creator', 'full', 'face', 'front', 'side', 'back', 'third', 'mirror', 'cinematic', 'selfie', 'hero', 'beauty', 'portrait'];
 
 export class CameraRig {
   constructor(camera, dom) {
@@ -22,7 +22,7 @@ export class CameraRig {
   }
   orbit(dx, dy) { if (!this.userOrbit) { this.mode = 'creator'; this.userOrbit = true; } this.g.yaw -= dx * 0.008; this.g.pitch = Math.max(-0.5, Math.min(1.25, this.g.pitch + dy * 0.006)); this.manual = true; }
   zoom(f) { const lim = this.mode === 'face' ? [0.35, 2.2] : [0.45, 9]; this.g.dist = Math.max(lim[0], Math.min(lim[1], this.g.dist * f)); this.manual = true; }
-  setMode(m) { this.mode = m; this.manual = false; this.userOrbit = ['creator', 'full', 'face', 'front', 'side', 'back'].includes(m); }
+  setMode(m) { this.mode = m; this.manual = false; this.userOrbit = ['creator', 'full', 'face', 'front', 'side', 'back', 'hero', 'beauty', 'portrait'].includes(m); }
   snap(an) { this.update(100, an); this.update(100, an); }
   setCharacter(ch) { this.ch = ch; this.H = ch.state.body.height / 100; }
   update(dt, an) {
@@ -38,6 +38,9 @@ export class CameraRig {
       case 'third': g.yaw = yawChar + Math.PI + 0.25; g.dist = 3.3; g.fov = 40; g.pitch = 0.22; tgt = [root.x, H * 0.62, root.z]; break;
       case 'mirror': g.yaw = yawChar + Math.PI + 0.42; g.dist = 3.3; g.fov = 42; g.pitch = 0.08; tgt = [root.x, H * 0.6, root.z + 1.25]; break;
       case 'cinematic': g.yaw = yawChar + 0.55 + 0.35 * Math.sin(this.t * 0.18); g.dist = 3.0 + 0.5 * Math.sin(this.t * 0.11); g.fov = 32; g.pitch = -0.04 + 0.05 * Math.sin(this.t * 0.13); tgt = [root.x, H * 0.62 + 0.12 * Math.sin(this.t * 0.07), root.z]; break;
+      case 'hero': g.yaw = (this.heroYaw ?? 0.0); g.dist = 4.7 * H / 1.68; g.fov = 26; g.pitch = -0.03; tgt = [root.x, H * 0.5, root.z]; this.manual = false; break;
+      case 'beauty': g.yaw = (this.heroYaw ?? 0.0) + 0.12; g.dist = 2.5 * H / 1.68; g.fov = 26; g.pitch = 0.02; tgt = [root.x, H * 0.72, root.z]; this.manual = false; break;
+      case 'portrait': g.yaw = (this.heroYaw ?? 0.0) + 0.2; g.dist = 1.05; g.fov = 20; g.pitch = 0.0; tgt = [root.x, head + 0.035, root.z]; this.manual = false; break;
       case 'selfie': g.yaw = yawChar; g.dist = 0.62; g.fov = 52; g.pitch = 0.0; tgt = [root.x + Math.sin(yawChar) * 0.0, head + 0.01, root.z]; break;
     }
     if (tgt) g.target.set(...tgt);

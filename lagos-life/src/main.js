@@ -6,6 +6,14 @@ import { Animator } from './character/animation.js';
 import { LightRig, PRESETS } from './world/lighting.js';
 import { LagosWorld, Rain } from './world/lagos.js';
 import { Studio } from './world/studio.js';
+import { Showcase } from './world/showcase.js';
+import { SHOWCASE } from './world/lighting.js';
+import { HEROES } from './data/heroes.js';
+import { EffectComposer } from 'three/examples/jsm/postprocessing/EffectComposer.js';
+import { RenderPass } from 'three/examples/jsm/postprocessing/RenderPass.js';
+import { BokehPass } from 'three/examples/jsm/postprocessing/BokehPass.js';
+import { UnrealBloomPass } from 'three/examples/jsm/postprocessing/UnrealBloomPass.js';
+import { OutputPass } from 'three/examples/jsm/postprocessing/OutputPass.js';
 import { CameraRig } from './render/cameraRig.js';
 import { Store } from './core/store.js';
 import { createCharacter, randomCharacter, sanitize } from './core/schema.js';
@@ -18,6 +26,11 @@ const TIERS = {
   low:    { pr: 1, shadow: 512, shadows: false, ped: 0, world: 'low', rain: 900 },
 };
 
+const HERO_POSE = {
+  amara: { shift: 0.02, roll: 0.05, handHip: 'R', headRoll: 0.08, footFwd: 0.1, bodyYaw: -0.4, camYaw: 0.0, armBend: 0.25 },
+  tolu: { shift: -0.018, roll: -0.05, handHip: 'L', headRoll: -0.07, footFwd: -0.08, bodyYaw: 0.4, camYaw: 0.0, armBend: 0.3 },
+  chidi: { shift: 0.012, roll: 0.03, handHip: null, headRoll: -0.04, footFwd: 0.07, bodyYaw: -0.3, camYaw: 0.0, armBend: 0.45 },
+};
 export class App {
   constructor(canvas) {
     this.canvas = canvas; this.tier = new URLSearchParams(location.search).get('quality') || (matchMedia('(max-width: 800px)').matches ? 'medium' : 'high');
@@ -25,12 +38,14 @@ export class App {
     this.renderer.toneMapping = THREE.ACESFilmicToneMapping; this.renderer.outputColorSpace = THREE.SRGBColorSpace; this.renderer.shadowMap.enabled = true; this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
     this.store = new Store(); this.clock = new THREE.Clock(); this.sceneName = 'creator'; this.lighting = 'indoor'; this.weather = { rain: 0, wind: 0 }; this.fps = 60; this.extra = []; this.walkLoop = false; this.keys = new Set(); this.letterbox = false;
     this.studioScene = new THREE.Scene(); this.lagosScene = new THREE.Scene();
+    this.showScene = new THREE.Scene(); this.showRig = new LightRig(this.renderer, this.showScene); this.showRig.table = SHOWCASE; this.showcase = new Showcase(); this.showScene.add(this.showcase.group); this.fx = true;
+    this.clean = new URLSearchParams(location.search).has('clean');
     this.studioRig = new LightRig(this.renderer, this.studioScene); this.lagosRig = new LightRig(this.renderer, this.lagosScene);
     this.studio = new Studio(this.tier); this.studioScene.add(this.studio.group);
     this.lagos = null; this.rain = new Rain(TIERS[this.tier].rain); this.studioScene.add(this.rain.mesh);
     this.camera = new THREE.PerspectiveCamera(24, 1, 0.05, 200); this.camRig = new CameraRig(this.camera, canvas);
     this.pedestrians = [];
-    this.makeCharacter(); this.applyQuality(this.tier, true); this.setScene('creator'); this.setLighting('indoor');
+    this.makeCharacter(); this.applyQuality(this.tier, true); if (this.clean) document.getElementById('ui').style.display = 'none'; this.setScene('creator'); this.setLighting('indoor');
     this.store.subscribe((st, o) => this.onState(st, o));
     addEventListener('resize', () => this.resize()); this.resize();
     addEventListener('keydown', e => { if (/INPUT|SELECT|TEXTAREA/.test(e.target.tagName)) return; this.keys.add(e.key.toLowerCase()); }); addEventListener('keyup', e => this.keys.delete(e.key.toLowerCase()));
@@ -56,8 +71,8 @@ export class App {
   }
   afterApply() { this.an.resetFeetIfIdle?.(); this.applyWeather(); for (const fn of this.listeners || []) fn(); }
   // ------------------------------------------------------------------ stages / light / weather / quality
-  activeScene() { return this.sceneName === 'lagos' ? this.lagosScene : this.studioScene; }
-  rigOf() { return this.sceneName === 'lagos' ? this.lagosRig : this.studioRig; }
+  activeScene() { return this.sceneName === 'lagos' ? this.lagosScene : this.sceneName === 'showcase' ? this.showScene : this.studioScene; }
+  rigOf() { return this.sceneName === 'lagos' ? this.lagosRig : this.sceneName === 'showcase' ? this.showRig : this.studioRig; }
   ensureLagos() {
     if (this.lagos) return; this.lagos = new LagosWorld(TIERS[this.tier].world); this.lagosScene.add(this.lagos.group); this.lagosScene.add(this.rain.mesh.clone());
     this.lagosRain = new Rain(TIERS[this.tier].rain); this.lagosScene.add(this.lagosRain.mesh); this.lagosRig.lamps = this.lagos.lamps; this.spawnPedestrians();
@@ -66,6 +81,7 @@ export class App {
     const prev = this.sceneName; this.sceneName = name; if (name === 'lagos') this.ensureLagos();
     const sc = this.activeScene(); sc.add(this.ch.root); for (const c of this.extra) sc.add(c.ch.root);
     this.studio.setFitting(name === 'fitting'); this.studio.floor.visible = name !== 'lagos';
+    if (name === 'showcase') { this.an.pos.set(0, 0, 0); this.an.resetFeet(); this.camRig.env = 'showcase'; }
     if (name === 'fitting' && prev !== 'fitting') this.setLighting('indoor'); else this.setLighting(this.lighting);
     if (name === 'fitting') { this.an.input.heading = 0; this.an.yaw = 0; }
     this.camRig.env = name; this.lagosRig.sunMul = [-1, 1, 1];
@@ -74,11 +90,11 @@ export class App {
     this.applyWeather(); for (const fn of this.listeners || []) fn();
   }
   setLighting(mode) {
-    this.lighting = mode; this.studioRig.apply(mode, { background: true }); this.lagosRig.apply(mode, { background: true });
-    if (this.sceneName !== 'lagos') { this.studioScene.background = new THREE.Color(this.sceneName === 'fitting' ? { day: '#c9b7a0', indoor: '#2a211b', night: '#0c0a10' }[mode] : PRESETS[mode].bg); }
+    this.lighting = mode; this.studioRig.apply(mode, { background: true }); this.lagosRig.apply(mode, { background: true }); this.showRig.apply(mode, { background: true }); this.showcase.setMode(mode);
+    if (this.sceneName === 'creator' || this.sceneName === 'fitting') { this.studioScene.background = new THREE.Color(this.sceneName === 'fitting' ? { day: '#c9b7a0', indoor: '#2a211b', night: '#0c0a10' }[mode] : PRESETS[mode].bg); }
     this.lagos?.setMode(mode); this.applySkinEnv(); this.applyWeather(); for (const fn of this.listeners || []) fn();
   }
-  applySkinEnv() { const p = PRESETS[this.lighting], rig = this.rigOf(), env = rig.env(this.lighting); for (const c of [this.ch, ...this.extra.map(e => e.ch), ...this.pedestrians.map(q => q.ch)]) c.setEnvironment(env, p.skinEnv ?? 0.4); }
+  applySkinEnv() { const rig = this.rigOf(), p = (rig.table || PRESETS)[this.lighting], env = rig.env(this.lighting); for (const c of [this.ch, ...this.extra.map(e => e.ch), ...this.pedestrians.map(q => q.ch)]) c.setEnvironment(env, p.skinEnv ?? 0.4); }
   setWeather(w) { Object.assign(this.weather, w); this.applyWeather(); }
   applyWeather() {
     const { rain, wind } = this.weather, chars = [this.ch, ...this.pedestrians.map(p => p.ch), ...this.extra.map(e => e.ch)];
@@ -91,6 +107,26 @@ export class App {
     this.resize(); if (silent) return;
     this.makeCharacter(); if (this.lagos) { this.lagosScene.remove(this.lagos.group); this.lagos = null; this.clearPedestrians(); this.ensureLagos(); this.lagos.setMode(this.lighting); }
     this.setScene(this.sceneName); for (const fn of this.listeners || []) fn();
+  }
+  // ------------------------------------------------------------------ hero showcase
+  showHero(name, { lighting = 'indoor', shot = 'hero' } = {}) {
+    const P = HERO_POSE[name] || {}; this.clearExtra(); this.walkLoop = false; this.an.input.speed = 0;
+    this.store.replace(HEROES[name]()); this.setScene('showcase'); this.setLighting(lighting); this.an.pose = 'stand'; this.an.setHeroPose(P); this.an.autoExpr = true; this.an.setExpression('soft');
+    this.camRig.heroYaw = P.camYaw ?? 0; this.camRig.setMode(shot); this.hero = name; for (const fn of this.listeners || []) fn();
+  }
+  setShot(shot) { this.camRig.setMode(shot); }
+  ensureFx() {
+    if (this.composer) return; const w = innerWidth, h = innerHeight, rt = new THREE.WebGLRenderTarget(w, h, { type: THREE.HalfFloatType, samples: 4 });
+    this.composer = new EffectComposer(this.renderer, rt); this.renderPass = new RenderPass(this.showScene, this.camera); this.composer.addPass(this.renderPass);
+    this.bokeh = new BokehPass(this.showScene, this.camera, { focus: 6, aperture: 0.0006, maxblur: 0.012 }); this.composer.addPass(this.bokeh);
+    this.bloom = new UnrealBloomPass(new THREE.Vector2(w, h), 0.2, 0.6, 1.25); this.composer.addPass(this.bloom); this.composer.addPass(new OutputPass());
+  }
+  renderFrame() {
+    if (this.sceneName === 'showcase' && this.fx && this.tier !== 'low') {
+      this.ensureFx(); const sz = this.renderer.getSize(new THREE.Vector2()); if (this.composer._w !== sz.x || this.composer._h !== sz.y) { this.composer.setSize(sz.x, sz.y); this.composer._w = sz.x; this.composer._h = sz.y; }
+      const d = this.camera.position.distanceTo(this.camRig.target); this.bokeh.uniforms.focus.value = d; this.bokeh.uniforms.aperture.value = 0.00065 * (this.camRig.mode === 'portrait' ? 1.4 : 1); this.bokeh.uniforms.maxblur.value = 0.013;
+      this.bloom.strength = this.lighting === 'night' ? 0.32 : 0.1; this.renderPass.scene = this.showScene; this.composer.render();
+    } else this.renderer.render(this.activeScene(), this.camera);
   }
   // ------------------------------------------------------------------ pedestrians (same Character class, low-cost hair)
   clearPedestrians() { for (const p of this.pedestrians) { p.ch.root.parent?.remove(p.ch.root); p.ch.dispose(); } this.pedestrians = []; }
@@ -126,7 +162,7 @@ export class App {
   resize() {
     const w = innerWidth, h = innerHeight; this.renderer.setSize(w, h, false); this.camera.aspect = w / h;
     // centre the character in the free area (beside the panel on desktop, above the bottom sheet on mobile)
-    if (w > 820) this.camera.setViewOffset(w, h, -192, 0, w, h); else this.camera.setViewOffset(w, h, 0, Math.round(h * 0.2), w, h);
+    if (this.clean) this.camera.clearViewOffset(); else if (w > 820) this.camera.setViewOffset(w, h, -192, 0, w, h); else this.camera.setViewOffset(w, h, 0, Math.round(h * 0.2), w, h);
     this.camera.updateProjectionMatrix();
   }
   input() {
@@ -146,7 +182,7 @@ export class App {
     this.camRig.update(dt, this.an); const rig = this.rigOf(); rig.update(this.an.pos);
     this.lagos?.update(dt, this.weather.wind); this.rain.update(dt, this.an.pos); this.lagosRain?.update(dt, this.an.pos);
     // mirror / selfie phone prop
-    this.renderer.render(this.activeScene(), this.camera);
+    this.renderFrame();
   }
 }
 export function boot() {

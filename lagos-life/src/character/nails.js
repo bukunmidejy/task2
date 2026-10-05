@@ -4,6 +4,7 @@
 import * as THREE from 'three';
 import { FINGERS } from './rig.js';
 import { mulberry32 } from '../core/rng.js';
+import { skinPalette, lin2hex } from '../core/skincolor.js';
 
 const outline = (shape, v) => { // half-width factor along the nail (v: 0 base .. 1 free edge)
   switch (shape) {
@@ -28,6 +29,7 @@ function designTex(design, color, accent) {
 export function buildNails(ch) {
   const s = ch.state.nails, rig = ch.rig, out = [];
   const natural = s.type === 'natural';
+  if (natural) return out; // natural nails are skin-tone and sub-pixel at game distance: rendering a plate only creates pale flakes
   const mat = new THREE.MeshPhysicalMaterial({ map: designTex(s.design, s.color, s.designColor), roughness: natural ? 0.55 : 0.12, clearcoat: natural ? 0.1 : 1, clearcoatRoughness: 0.05,
     metalness: s.design === 'chrome' ? 0.9 : 0, side: THREE.DoubleSide, transparent: false });
   if (s.design === 'chrome') { mat.color = new THREE.Color('#d8d8e0'); mat.roughness = 0.08; }
@@ -36,7 +38,7 @@ export function buildNails(ch) {
     for (const f of FINGERS) {
       const F = hl.fingers[f], a = F.joints[2], b = F.joints[3], d = new THREE.Vector3(b[0] - a[0], b[1] - a[1], b[2] - a[2]), segLen = d.length(); d.normalize();
       const dorsal = new THREE.Vector3(...hl.n).multiplyScalar(-1), across = new THREE.Vector3(0, 0, 1);
-      const thick = F.radius * 0.86 * 0.9 * (1 - 0.1), halfW = F.radius * 0.72 * (f === 'thumb' ? 1.08 : 1);
+      const thick = F.radius * 0.86 * 0.9 * (natural ? 0.9 : 1.0), halfW = F.radius * 0.72 * (f === 'thumb' ? 1.08 : 1);
       const natLen = segLen * 0.78, ext = s.length * (s.type === 'natural' ? 0.2 : 1) * 0.016 * (f === 'pinky' ? 0.85 : 1) * (s.type === 'acrylic' ? 1.25 : 1) + (natural ? 0 : 0.0008);
       const NU = 10, NV = 12, pos = [], uv = [], idx = [], L = natLen + ext, start = segLen - natLen;
       for (let j = 0; j <= NV; j++) for (let i = 0; i <= NU; i++) {

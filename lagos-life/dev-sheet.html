@@ -5,6 +5,7 @@ import { RoomEnvironment } from 'three/examples/jsm/environments/RoomEnvironment
 import { Character } from '/src/character/Character.js';
 import { Animator } from '/src/character/animation.js';
 import { createCharacter } from '/src/core/schema.js';
+import { HEROES } from '/src/data/heroes.js';
 const q = new URLSearchParams(location.search);
 const list = JSON.parse(q.get('s')); const mode=q.get('view')||'head'; const yaw=+(q.get('yaw')||0.35);
 const r = new THREE.WebGLRenderer({canvas:document.getElementById('c'), antialias:true}); r.setSize(innerWidth, innerHeight, false); r.setScissorTest(true);
@@ -15,7 +16,7 @@ const key = new THREE.DirectionalLight(0xfff0e0, 1.7); key.position.set(1.5,2.2,
 const fill = new THREE.DirectionalLight(0xc0d0ff, 0.5); fill.position.set(-2,1,1); sc.add(fill);
 const rim = new THREE.DirectionalLight(0xffe0c0, 1.2); rim.position.set(-1,2,-3); sc.add(rim);
 const chars=[]; const W=innerWidth/list.length, Hh=innerHeight; const t0=performance.now();
-list.forEach((o,i)=>{ const st=createCharacter({seed:7+i,...o}); const ch=new Character({quality:q.get('quality')||'high'}); ch.apply(st); ch.setEnvironment(env,0.55); const an=new Animator(ch); an.pos.set(i*3,0,0); an.resetFeet(); an.update(1/60); sc.add(ch.root); chars.push({ch,an,st}); });
+list.forEach((o,i)=>{ const st=o.hero?HEROES[o.hero]():createCharacter({seed:7+i,...o}); if(o.hair){ Object.assign(st.hair,o.hair);}  const ch=new Character({quality:q.get('quality')||'high'}); ch.apply(st); ch.setEnvironment(env,0.55); const an=new Animator(ch); an.pos.set(i*3,0,0); an.resetFeet(); an.update(1/60); sc.add(ch.root); chars.push({ch,an,st}); });
 chars.forEach(({an,ch})=>{ for(let k=0;k<30;k++){ an.update(1/60);} ch.root.updateMatrixWorld(true); });
 window.__ms=(performance.now()-t0).toFixed(0);
 chars.forEach(({ch,an,st},i)=>{ r.setViewport(i*W,0,W,Hh); r.setScissor(i*W,0,W,Hh);

@@ -20,6 +20,13 @@ export const PRESETS = {
   night: { label: 'Night', exposure: 1.55, skinEnv: 0.3, fillPos: [4, 1.6, 2.5], sun: { color: '#a9bcff', i: 1.1, pos: [-4, 6, 3] }, fill: { color: '#8aa0f0', i: 1.6 }, rim: { color: '#ffb36b', i: 2.2 }, hemi: { sky: '#34478a', gnd: '#2a1c12', i: 0.6 }, env: 0.5, bg: '#05070f', fog: ['#0a0e1c', 0.02], practical: 48 },
 };
 
+// Showcase presets: soft warm key from front-left, cool-neutral fill, strong warm rim from behind for hair/shoulder definition.
+export const SHOWCASE = {
+  day:    { label: 'Daylight', exposure: 0.9, skinEnv: 0.3, sun: { color: '#fff1dc', i: 2.6, pos: [-2.5, 3.2, 3.5] }, fill: { color: '#dfe8ff', i: 0.7 }, fillPos: [3.5, 1.6, 3], rim: { color: '#ffe3b8', i: 2.4 }, hemi: { sky: '#fff2e2', gnd: '#8a5a3a', i: 0.7 }, env: 0.7, bg: '#c98a62', fog: null, practical: 0 },
+  indoor: { label: 'Indoor warm', exposure: 0.85, skinEnv: 0.34, sun: { color: '#ffd2a0', i: 2.5, pos: [-2.5, 3, 3.5] }, fill: { color: '#ffc088', i: 0.8 }, fillPos: [3.5, 1.6, 3], rim: { color: '#ffb868', i: 2.2 }, hemi: { sky: '#ffe0bc', gnd: '#5a3a28', i: 0.55 }, env: 0.55, bg: '#2a1a12', fog: null, practical: 0 },
+  night:  { label: 'Night', exposure: 1.25, skinEnv: 0.3, sun: { color: '#a9bcff', i: 1.2, pos: [-2.5, 3.2, 3.5] }, fill: { color: '#7f95e8', i: 1.5 }, fillPos: [3.5, 1.6, 3], rim: { color: '#ffa860', i: 2.0 }, hemi: { sky: '#34478a', gnd: '#2a1c12', i: 0.5 }, env: 0.45, bg: '#080a16', fog: null, practical: 22 },
+};
+
 export class LightRig {
   constructor(renderer, scene) {
     this.r = renderer; this.scene = scene; this.group = new THREE.Group(); scene.add(this.group);
@@ -41,7 +48,7 @@ export class LightRig {
   setShadow(size) { this.shadowSize = size; this.sun.shadow.mapSize.set(size, size); const c = this.sun.shadow.camera; c.left = c.bottom = -3.2; c.right = c.top = 3.2; c.near = 0.5; c.far = 30; if (this.sun.shadow.map) { this.sun.shadow.map.dispose(); this.sun.shadow.map = null; } c.updateProjectionMatrix(); }
   setShadowsEnabled(v) { this.sun.castShadow = v; }
   apply(mode, { background = true } = {}) {
-    const p = PRESETS[mode]; this.mode = mode; const sc = this.scene;
+    const p = (this.table || PRESETS)[mode]; this.mode = mode; const sc = this.scene;
     this.sun.color.set(p.sun.color); this.sun.intensity = p.sun.i; this.sun.position.set(...p.sun.pos);
     this.fill.color.set(p.fill.color); this.fill.intensity = p.fill.i; this.fill.position.set(...(p.fillPos || [-4, 2, 3]));
     this.rim.color.set(p.rim.color); this.rim.intensity = p.rim.i; this.rim.position.set(-2, 3, -5);
@@ -53,5 +60,5 @@ export class LightRig {
     for (const l of this.lamps) l.visible = mode === 'night';
     for (const fn of this.onMode || []) fn(mode);
   }
-  update(target) { this.sun.target.position.set(target.x, 1, target.z); const o = new THREE.Vector3(...PRESETS[this.mode].sun.pos); if (this.sunMul) o.multiply(new THREE.Vector3(...this.sunMul)); this.sun.position.copy(target).add(o); { const fp = PRESETS[this.mode].fillPos || [-4, 2, 3]; this.fill.position.set(target.x + fp[0], fp[1], target.z + fp[2]); } this.rim.position.set(target.x - 2, 3, target.z - 5); this.practical.position.set(target.x - 1.5, 2.3, target.z + 1.9); }
+  update(target) { const T = this.table || PRESETS; this.sun.target.position.set(target.x, 1, target.z); const o = new THREE.Vector3(...T[this.mode].sun.pos); if (this.sunMul) o.multiply(new THREE.Vector3(...this.sunMul)); this.sun.position.copy(target).add(o); { const fp = T[this.mode].fillPos || [-4, 2, 3]; this.fill.position.set(target.x + fp[0], fp[1], target.z + fp[2]); } this.rim.position.set(target.x + 1.6, 2.8, target.z - 3.4); this.practical.position.set(target.x - 1.5, 2.3, target.z + 1.9); }
 }

@@ -24,7 +24,7 @@ export function computeRig(body) {
   const H = body.height / 100, s = H / 1.68;
   const sw = Math.pow(s, 0.62);                       // widths scale slower than height
   const G = 1 + 0.17 * body.build + 0.05 * body.muscle; // overall girth
-  const hs = Math.pow(s, 0.55);                       // head scale
+  const hs = Math.pow(s, 0.55) * 0.935;                       // head scale
   const leg = 0.515 + 0.02 * body.legLength;
   const hipY = leg * H, ankleY = 0.0387 * H, kneeY = ankleY + (hipY - ankleY) * 0.505;
   const shoulderY = 0.822 * H + 0.004 * body.posture, neckBaseY = shoulderY + 0.018 * H;
@@ -71,11 +71,11 @@ export function handLayout(wrist, dir, sg, s) {
   const z = [0, 0, 1];
   const hs = Math.pow(s, 0.85);
   const palmLen = 0.092 * hs;
-  const spec = { index: [0.031, [0.040, 0.024, 0.020], 0.0084], middle: [0.011, [0.044, 0.027, 0.022], 0.0088], ring: [-0.010, [0.040, 0.025, 0.021], 0.0082], pinky: [-0.029, [0.031, 0.019, 0.018], 0.0072] };
+  const spec = { index: [0.037, [0.040, 0.024, 0.020], 0.0078], middle: [0.0125, [0.044, 0.027, 0.022], 0.0082], ring: [-0.0125, [0.040, 0.025, 0.021], 0.0076], pinky: [-0.036, [0.031, 0.019, 0.018], 0.0066] };
   const fingers = {};
   for (const [name, [zo, segs, r]] of Object.entries(spec)) {
     const base = add(add(wrist, d, palmLen), z, zo * hs);
-    const dirF = nrm(add(d, z, zo * 0.9)); // slight natural splay
+    const dirF = nrm(add(d, z, zo * 1.7)); // natural splay
     const joints = [base]; let p = base;
     for (let i = 0; i < 3; i++) { p = add(p, dirF, segs[i] * hs); joints.push(p); }
     fingers[name] = { joints, dir: dirF, radius: r * hs, segs: segs.map(q => q * hs) };

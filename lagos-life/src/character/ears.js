@@ -4,7 +4,7 @@ import { PrimList, meshSDF } from './sdf.js';
 import { BONE_INDEX } from './rig.js';
 
 export function earGeometry(f) {
-  const H = BONE_INDEX.head, P = new PrimList(), sz = 1 + 0.13 * f.earSize, lobe = 1 + 0.45 * f.earLobe;
+  const H = BONE_INDEX.head, P = new PrimList(), sz = 0.86 * (1 + 0.13 * f.earSize), lobe = 1 + 0.45 * f.earLobe;
   const ey = 0.0, ez = 0.0;
   // ear local frame: +x away from head, +y up, +z forward. x=0 is the head surface.
   P.add();

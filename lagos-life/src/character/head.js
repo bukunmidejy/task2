@@ -5,13 +5,19 @@
 // so proportions stay natural by construction.
 import { PrimList, meshSDF, makeField } from './sdf.js';
 import { BONE_INDEX } from './rig.js';
+import { FACE_PARAMS } from '../data/params.js';
+
+// Identity gain: moves each slider's effect further from the canonical default so faces read as DIFFERENT PEOPLE, not tweaks.
+const GAIN = 1.7, DEFS = Object.fromEntries(FACE_PARAMS.map(p => [p.key, p.def]));
+export const amplify = f => Object.fromEntries(Object.entries(f).map(([k, v]) => [k, DEFS[k] + (v - DEFS[k]) * GAIN]));
 
 const HB = BONE_INDEX.head;
 
-export function faceLayout(f, a) {
+export function faceLayout(f0, a) {
+  const f = amplify(f0);
   const A = k => (a && a[k]) || 0;
   const ex = 0.0328 * (1 + 0.11 * f.eyeSpacing), ey = 0.0432 + 0.0042 * f.eyeHeight, ez = 0.0585;
-  const eyeR = 0.0122;
+  const eyeR = 0.0138;
   const L = {
     eyeR, eye: [[-ex + 0, ey - 0.0009 * A('eye'), ez], [ex, ey + 0.0009 * A('eye'), ez]], // [right(-x), left(+x)]
     eyeOpen: 1 + 0.32 * f.eyeSize, eyeTilt: f.eyeTilt, lidFull: f.eyelid,
@@ -20,13 +26,14 @@ export function faceLayout(f, a) {
   return L;
 }
 
-export function headPrims(f, a) {
+export function headPrims(f0, a) {
+  const f = amplify(f0);
   const P = new PrimList(), A = k => (a && a[k]) || 0;
   const L = faceLayout(f, a);
   const dy = -0.0070 * f.faceLength; // lengthens/shortens the lower face
   // ---- skull & face mass
   P.add();
-  P.ell(HB, [0, 0.068 + 0.002 * f.forehead, -0.0135], 0.0625 + 0.0030 * f.faceWidth, 0.0845 + 0.0035 * f.forehead, 0.0905, 0.03);
+  P.ell(HB, [0, 0.062 + 0.002 * f.forehead, -0.0135], 0.0625 + 0.0030 * f.faceWidth, 0.0775 + 0.0030 * f.forehead, 0.0900, 0.03);
   P.seg(HB, [0, 0.036, 0.020], [0, -0.010 + dy * 0.6, 0.030], 0.0525 + 0.0040 * f.faceWidth, 0.0430 + 0.004 * f.faceWidth, 0.058, 0.052, 0.03);
   P.ell(HB, [0, -0.027 + dy, 0.0150], 0.0330 + 0.005 * f.jawWidth + 0.003 * f.faceWidth - 0.002 * f.jawLine, 0.037, 0.0605, 0.05);
   for (const sg of [-1, 1]) {
@@ -39,7 +46,7 @@ export function headPrims(f, a) {
     P.ell(HB, [sg * 0.0285, -0.0020, 0.0480], (0.0190 + 0.0085 * f.cheekFull) * c, 0.0275 + 0.003 * f.cheekFull, 0.0235 + 0.0080 * f.cheekFull, 0.06);
     P.ell(HB, [sg * (0.0470 + 0.002 * f.faceWidth), 0.0205, 0.0335], 0.0145 + 0.0055 * f.cheekbone, 0.0125 + 0.002 * f.cheekbone, 0.0215 + 0.0070 * f.cheekbone, 0.02);
   }
-  P.ell(HB, [0, 0.095 + 0.004 * f.forehead, 0.0515 - 0.0065 * f.foreheadSlope], 0.0485 + 0.002 * f.faceWidth, 0.0365 + 0.0085 * f.forehead, 0.0405, 0.03);
+  P.ell(HB, [0, 0.087 + 0.004 * f.forehead, 0.0515 - 0.0065 * f.foreheadSlope], 0.0485 + 0.002 * f.faceWidth, 0.0335 + 0.0075 * f.forehead, 0.0405, 0.03);
   for (const sg of [-1, 1]) {
     const bh = 0.0615 + 0.0030 * f.browHeight + 0.0008 * A('brow') * sg;
     P.ell(HB, [sg * 0.0275, bh, 0.0765 - 0.0015 * f.eyeDepth], 0.0270, 0.0072 + 0.0030 * f.browRidge, 0.0095 + 0.0040 * f.browRidge, 0.012);
@@ -74,7 +81,7 @@ export function headPrims(f, a) {
   P.subtract();
   for (let i = 0; i < 2; i++) {
     const e = L.eye[i], sg = i === 0 ? -1 : 1;
-    P.ell(HB, [e[0], e[1] + 0.0004, e[2] + 0.0128], 0.0136 + 0.0012 * f.eyeSize, 0.0108 + 0.0018 * f.eyeSize, 0.0116 + 0.0012 * f.eyeDepth, 0.005);
+    P.ell(HB, [e[0], e[1] + 0.0004, e[2] + 0.0138], 0.0150 + 0.0012 * f.eyeSize, 0.0120 + 0.0018 * f.eyeSize, 0.0124 + 0.0012 * f.eyeDepth, 0.005);
     // tear trough / medial canthus pit
     P.ell(HB, [sg * (Math.abs(e[0]) - 0.0128), e[1] - 0.0028, e[2] + 0.0035], 0.0055, 0.0075, 0.0095, 0.006);
   }
@@ -121,7 +128,10 @@ export function buildHead(f, a, h = 0.0028) {
   const n = m.position.length / 3, uv = new Float32Array(n * 2);
   for (let i = 0; i < n; i++) { const p = m.position; uv[i * 2] = (p[i * 3] - FACE_RECT.x0) / FACE_RECT.w; uv[i * 2 + 1] = (p[i * 3 + 1] - FACE_RECT.y0) / FACE_RECT.h; }
   const field = makeField(prims);
-  return { ...m, uv, layout, field, anchors: { subY, tipY, tipZ, my, lw }, features: featureMap(f, a, layout, ctx) };
+  // baked ambient occlusion from the SDF (warm, not grey): gives sockets, nose sides, lip crease, jaw/neck real depth
+  const ao = new Float32Array(n * 3), P0 = m.position, N0 = m.normal, DS = [0.003, 0.007, 0.013, 0.023], WS = [0.4, 0.3, 0.2, 0.1];
+  for (let i = 0; i < n; i++) { let occ = 0; for (let k = 0; k < 4; k++) { const d = DS[k], f = field(P0[i * 3] + N0[i * 3] * d, P0[i * 3 + 1] + N0[i * 3 + 1] * d, P0[i * 3 + 2] + N0[i * 3 + 2] * d); occ += WS[k] * Math.min(1, Math.max(0, (d - f) / d)); } const a = 1 - 0.9 * Math.min(1, occ * 1.15); ao[i * 3] = a; ao[i * 3 + 1] = Math.pow(a, 1.35); ao[i * 3 + 2] = Math.pow(a, 1.7); }
+  return { ...m, ao, uv, layout, field, anchors: { subY, tipY, tipZ, my, lw }, features: featureMap(amplify(f), a, layout, ctx) };
 }
 export const FACE_RECT = { x0: -0.085, w: 0.17, y0: -0.095, h: 0.245 };
 

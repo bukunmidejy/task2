@@ -34,14 +34,15 @@ export class Animator {
     this.expr = { ...EXPRESSIONS.neutral }; this.exprTarget = { ...EXPRESSIONS.neutral };
     this.handPose = { L: 'relaxed', R: 'relaxed' }; this.fingerCurl = { L: 0.3, R: 0.3 };
     this.gesture = null; this.pose = 'stand'; this.camTarget = null; this.wind = V(); this.rain = 0;
-    this.headVel = V(); this._lastHead = null; this.resetFeet();
+    this.hero = null; this.autoExpr = false; this.exprT = 2; this.headVel = V(); this._lastHead = null; this.resetFeet();
   }
   setExpression(name) { this.exprTarget = { ...(EXPRESSIONS[name] || EXPRESSIONS.neutral) }; }
   gestureWave() { this.gesture = { name: 'wave', t: 0, dur: 2.6 }; }
+  setHeroPose(p) { this.hero = p; if (p && p.bodyYaw !== undefined) { this.yaw = p.bodyYaw; this.input.heading = p.bodyYaw; } this.resetFeet(); }
   resetFeet() { if (!this.ch.rig) return; this._placeFeetAtRest(); }
   _placeFeetAtRest() {
     const J = this.ch.rig.J, c = Math.cos(this.yaw), s = Math.sin(this.yaw);
-    this.feet.forEach((f, i) => { const sg = i === 0 ? 1 : -1, lx = sg * Math.abs(J.footL[0]), lz = J.footL[2]; f.plant.set(this.pos.x + lx * c + lz * s, 0, this.pos.z - lx * s + lz * c); f.mode = 'stance'; f.restPlant = true; });
+    this.feet.forEach((f, i) => { const sg = i === 0 ? 1 : -1, lx = sg * Math.abs(J.footL[0]) * (this.hero ? 1.12 : 1), lz = J.footL[2] + (this.hero && i === 0 ? this.hero.footFwd || 0 : 0) - (this.hero && i === 1 ? (this.hero.footFwd || 0) * 0.3 : 0); f.plant.set(this.pos.x + lx * c + lz * s, 0, this.pos.z - lx * s + lz * c); f.mode = 'stance'; f.restPlant = true; });
   }
 
   update(dt) {
@@ -66,12 +67,12 @@ export class Animator {
     const sf = 0.62 - 0.26 * run;                 // stance fraction
     // ------------------------------------------------ idle micro-motion
     const breathe = Math.sin(t * 1.55) * 0.5 + 0.5, sway = Math.sin(t * 0.8) * 0.5, sway2 = Math.sin(t * 0.37 + 1.3);
-    const shiftX = (1 - this.moving) * (0.011 * sway + 0.004 * sway2);
+    const H0 = this.hero || {}; const shiftX = (1 - this.moving) * (0.011 * sway + 0.004 * sway2 + (H0.shift || 0));
     // ------------------------------------------------ hips / pelvis
     const hipsRest = V(...J.hips), hipsPos = hipsRest.clone();
     let pelvisYaw = 0, pelvisRoll = 0, pelvisPitch = 0, spineYaw = 0, spineRoll = 0, lean = 0;
     const ph = this.phase, w = this.moving;
-    pelvisYaw = w * 0.09 * Math.sin(ph * 2 * Math.PI) * (1 + run); pelvisRoll = w * 0.04 * Math.sin(ph * 2 * Math.PI + Math.PI / 2) + shiftX * -1.6;
+    pelvisYaw = w * 0.09 * Math.sin(ph * 2 * Math.PI) * (1 + run); pelvisRoll = w * 0.04 * Math.sin(ph * 2 * Math.PI + Math.PI / 2) + shiftX * -1.6 + (1 - w) * (H0.roll || 0);
     spineYaw = -pelvisYaw * 1.4; spineRoll = -pelvisRoll * 0.6;
     pelvisPitch = w * (0.02 + 0.13 * run) + (1 - w) * 0.0;
     lean = -this.turnRate * 0.015 * w;
@@ -177,7 +178,7 @@ export class Animator {
     const lookW = 1 - w * 0.6;
     const headYaw = g.yaw * lookW - pelvisYaw - spineYaw * 0.6 + (this.input.look ? this.input.look.yaw : 0), headPitch = g.pitch * lookW + (ch.state.body.posture < 0 ? 0.05 : 0) - 0.02;
     B.neck.quaternion.copy(eul(headPitch * 0.4 - torsoSlouch * 0.3, headYaw * 0.45, -spineRoll * 0.5));
-    B.head.quaternion.copy(eul(headPitch * 0.6 + torsoSlouch * 0.15, headYaw * 0.55, -spineRoll * 0.4 + Math.sin(t * 0.5) * 0.012 * (1 - w)));
+    B.head.quaternion.copy(eul(headPitch * 0.6 + torsoSlouch * 0.15, headYaw * 0.55, -spineRoll * 0.4 + Math.sin(t * 0.5) * 0.012 * (1 - w) + (1 - w) * (H0.headRoll || 0)));
     // clavicles
     for (const sd of ['L', 'R']) B[`clav${sd}`].quaternion.copy(eul(0, 0, (sd === 'L' ? -1 : 1) * (0.015 * br)));
     // ------------------------------------------------ arms
@@ -186,8 +187,10 @@ export class Animator {
       const sw = Math.sin((ph + opp) * 2 * Math.PI) * w * (0.38 + 0.5 * run) * (sg > 0 ? 1 : 1);
       const armIn = 0.19 + 0.05 * Math.sin(t * 0.6 + i) * (1 - w) - 0.05 * run;
       let ua = eul(-sw * (i === 0 ? 1 : 1) - 0.03, 0, -sg * armIn), fa = eul(-(0.14 + 0.2 * Math.abs(sw) + 0.5 * run + 0.03 * Math.sin(t * 1.1 + i)), 0, 0), ha = eul(0, 0, 0);
+      if (H0.armBend) fa = eul(-(0.14 + H0.armBend + 0.03 * Math.sin(t * 1.1 + i)), 0, 0);
+      if (H0.handHip === sd && w < 0.1) { ua = eul(0.3, 0, sg * 0.35); fa = eul(-1.0, -sg * 1.0, -sg * 0.2); ha = eul(0, 0, 0); }
       if (this.pose === 'selfie' && sd === 'R') { ua = eul(-0.85, 0, -sg * 0.55); fa = eul(-1.95, 0, 0.0); ha = eul(-0.2, 0, 0); }
-      if (this.pose === 'handsHips') { ua = eul(0.15, 0, -sg * -0.35); fa = eul(-1.8, 0, 0); }
+      if (this.pose === 'handsHips') { ua = eul(0.3, 0, sg * 0.35); fa = eul(-1.0, -sg * 1.0, -sg * 0.2); }
       if (this.handPose[sd] === 'holdBag') { fa = eul(-0.9, 0, 0); }
       if (this.gesture && this.gesture.name === 'wave' && sd === 'R') {
         const gp = this.gesture, k = Math.min(1, gp.t / 0.4) * Math.min(1, (gp.dur - gp.t) / 0.4);
@@ -197,7 +200,7 @@ export class Animator {
       // fingers: relaxed natural curl, with micro motion
       const curl = this.fingerCurl[sd] + 0.04 * Math.sin(t * 0.9 + i * 2);
       FINGERS.forEach((f, fi) => {
-        const base = f === 'thumb' ? [0.15, 0.25, 0.25] : [0.18 + 0.05 * fi, 0.45 + 0.03 * fi, 0.38];
+        const base = f === 'thumb' ? [0.12, 0.2, 0.2] : [0.12 + 0.04 * fi, 0.32 + 0.03 * fi, 0.26];
         for (let k = 1; k <= 3; k++) {
           const ang = base[k - 1] * (0.6 + curl * 1.2) * -sg * (f === 'thumb' ? 0.6 : 1);
           B[`${f}${k}${sd}`].quaternion.copy(f === 'thumb' ? eul(0, ang * 0.7, 0) : eul(0, 0, ang));
@@ -209,6 +212,7 @@ export class Animator {
     const bk = this.blink; bk.next -= dt;
     if (bk.next <= 0 && bk.t < 0) { bk.t = 0; bk.next = 2 + Math.random() * 4.5; if (Math.random() < 0.18) bk.next = 0.35; }
     let blinkAmt = 0; if (bk.t >= 0) { bk.t += dt; const d = 0.17, u = bk.t / d; blinkAmt = u < 0.45 ? ease(u / 0.45) : ease(Math.max(0, 1 - (u - 0.45) / 0.55)); if (u >= 1) bk.t = -1; }
+    if (this.autoExpr) { this.exprT -= dt; if (this.exprT <= 0) { const r = Math.random(); this.setExpression(r < 0.45 ? 'soft' : r < 0.7 ? 'smile' : r < 0.85 ? 'smize' : 'neutral'); this.exprT = 2.2 + Math.random() * 3.5; } }
     for (const k of Object.keys(this.expr)) this.expr[k] = damp(this.expr[k], this.exprTarget[k], 7, dt);
     const ex = this.expr;
     ch.eyes?.forEach((e, i) => {

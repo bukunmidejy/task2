@@ -28,6 +28,11 @@ export function bodyPrims(rig, bp, asym) {
   // chest / bust (continuous: negative = flatter, positive = fuller; muscle adds pectoral mass)
   const bs = bp.chest, pec = 0.55 * m;
   for (const sg of [-1, 1]) {
+    if (bs < -0.1) { // flat / pectoral chest: wide, shallow, no bust volume
+      const f = Math.min(1, -bs);
+      P.ell(B.chest, v3(sg * 0.07 * sw, bustY + 0.012, 0.058 * sw), 0.058 * sw + 0.012 * pec, 0.040 + 0.012 * pec, 0.022 + 0.012 * pec + 0.01 * (1 - f), 0.04);
+      continue;
+    }
     const bz = 0.074 * sw + 0.006 * bs, br = 0.046 + 0.03 * Math.max(bs, -0.7) + 0.012 * pec;
     P.ell(B.chest, v3(sg * (0.084 * sw + 0.004 * bs), bustY - 0.005 - 0.012 * Math.max(0, bs), bz), br * 1.1, br * 1.0, br * 0.95 * (0.85 + 0.2 * Math.max(0, bs)), 0.05);
   }
@@ -76,7 +81,7 @@ export function handPrims(rig, sd) {
     for (let i = 0; i < 3; i++) {
       const a = F.joints[i], b = F.joints[i + 1], bone = B[`${f}${i + 1}${sd}`];
       const r0 = F.radius * (1 - i * 0.09), r1 = F.radius * (1 - (i + 1) * 0.1) * (i === 2 ? 0.92 : 1);
-      P.seg(bone, a, b, r0 * 0.86, r1 * 0.86, r0, r1, 0.004);
+      P.seg(bone, a, b, r0 * 0.86, r1 * 0.86, r0, r1, 0.0022);
     }
   }
   return P;

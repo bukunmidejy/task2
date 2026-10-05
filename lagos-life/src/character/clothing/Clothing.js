@@ -42,7 +42,7 @@ export class Clothing {
     const deg = new Int32Array(n + 1); for (let t = 0; t < I.length; t += 3) for (let k = 0; k < 3; k++) deg[I[t + k] + 1] += 2;
     for (let i = 0; i < n; i++) deg[i + 1] += deg[i]; const adj = new Int32Array(deg[n]), fill = deg.slice(0, n);
     for (let t = 0; t < I.length; t += 3) for (let k = 0; k < 3; k++) { const a = I[t + k], b = I[t + (k + 1) % 3], c = I[t + (k + 2) % 3]; adj[fill[a]++] = b; adj[fill[a]++] = c; }
-    this.prep = { n, P, N, SI, SW, I: Uint32Array.from(I), wArm, wFoot, armS, seg, deg, adj, rig };
+    this.prep = { n, P, N, SI, SW, I: Uint32Array.from(I), wArm, wFoot, armS, seg, deg, adj, rig }; this.prep.wArmS = Float32Array.from(wArm); this.smoothField(this.prep.wArmS, 4);
   }
   smoothField(g, passes = 2) { const { n, deg, adj } = this.prep; const tmp = new Float32Array(n); for (let p = 0; p < passes; p++) { for (let i = 0; i < n; i++) { let s = g[i] * 2, c = 2; for (let k = deg[i]; k < deg[i + 1]; k++) { s += g[adj[k]]; c++; } tmp[i] = s / c; } g.set(tmp); } }
 
@@ -102,32 +102,30 @@ export class Clothing {
     const K = 0.72, E = T ? T.ease : { bust: 0, waist: 0, hip: 0, arm: 0 }, ease = { bust: E.bust * K, waist: E.waist * K, hip: E.hip * K, arm: E.arm };
     const sleeveEnd = s => (s <= 0 ? 0.12 : s <= 0.25 ? 0.3 : s <= 0.5 ? 0.54 : s <= 0.75 ? 0.78 : 0.985);
     const hemT = T ? lm[T.hem] : 0, riseY = G ? (G.rise === 'waist' ? L.waistY - 0.015 : G.rise === 'hip' ? L.hipY - 0.005 : L.hipY + 0.03) : 0, hemG = G ? lm[G.hem] : 0;
+    const wAS = pr.wArmS;
     for (let i = 0; i < n; i++) {
       const x = P[i * 3], y = P[i * 3 + 1], z = P[i * 3 + 2], ax = Math.abs(x);
       let gi = -1, ei = 0;
       if (T) {
-        if (wArm[i] > 0.5) {
-          if (T.sleeve >= 0) { gi = (sleeveEnd(T.sleeve) - armS[i]) * seg.L.tot; if (T.sleeve === 0 && T.strap) gi = -1; }
-          ei = 0.004 + (ease.arm * K - 0.004) * sm(0.0, 0.35, armS[i]) + (T.sleeveFlare || 0) * Math.pow(armS[i], 2.2);
-        } else {
-          const top = this.neckTop(T, x, z); let gt = Math.min(y - hemT, top - y);
-          if (T.strap) { const sx = L.shHalf * 0.5, gs = Math.min(T.strap / 2 - Math.abs(ax - sx), L.shoulderY + 0.03 - y, y - hemT); gt = Math.max(gt, gs); }
-          if (T.frontOpen && z > 0.01) gt = Math.min(gt, ax - T.frontOpen * (0.5 + 0.5 * sm(L.waistY, L.hipY - 0.1, y)));
-          gi = gt;
-          // ease by height (bust -> waist -> hip), legs inherit hip ease
-          let ev = y > L.waistY ? lerp(ease.waist, ease.bust, sm(L.waistY, L.bustY, y)) : lerp(ease.hip, ease.waist, sm(L.hipY, L.waistY, y));
-          if (y > L.bustY) ev = lerp(ease.bust, Math.min(ease.bust, 0.006), sm(L.bustY, L.shoulderY - 0.02, y));
-          ei = ev;
-        }
+        // torso formula (planar hems / necklines: analytic, never smoothed)
+        const top = this.neckTop(T, x, z); let gt = Math.min(y - hemT, top - y);
+        if (T.strap) { const sx = L.shHalf * 0.5, gs = Math.min(T.strap / 2 - Math.abs(ax - sx), L.shoulderY + 0.03 - y, y - hemT); gt = Math.max(gt, gs); }
+        if (T.frontOpen && z > 0.01) gt = Math.min(gt, ax - T.frontOpen * (0.5 + 0.5 * sm(L.waistY, L.hipY - 0.1, y)));
+        let et = y > L.waistY ? lerp(ease.waist, ease.bust, sm(L.waistY, L.bustY, y)) : lerp(ease.hip, ease.waist, sm(L.hipY, L.waistY, y));
+        if (y > L.bustY) et = lerp(ease.bust, Math.min(ease.bust, 0.006), sm(L.bustY, L.shoulderY - 0.02, y));
+        // arm formula
+        let ga = -0.2; if (T.sleeve >= 0 && !(T.sleeve === 0 && T.strap)) ga = (sleeveEnd(T.sleeve) - armS[i]) * seg.L.tot;
+        const ea = 0.004 + (ease.arm * K - 0.004) * sm(0.0, 0.35, armS[i]) + (T.sleeveFlare || 0) * Math.pow(armS[i], 2.2);
+        const a = sm(0.55, 0.85, wAS[i]);                       // continuous torso <-> arm blend (smooth armholes)
+        gi = lerp(gt, ga, a); ei = lerp(et, ea, a);
       }
-      if (G && wArm[i] <= 0.5) {
+      if (G && wAS[i] < 0.5) {
         let hy = hemG; if (G.hem === 'brief') hy = L.crotchY + 0.01 + 0.07 * sm(0.0, 0.14, ax) + 0.02 * (z > 0 ? 0 : 1);
         const gl = Math.min(riseY - y, y - hy);
         if (gl > gi) { gi = gl; ei = G.ease * (G.ease > 0.02 ? 0.8 : 1) + (G.flare || 0) * Math.min(1, Math.max(0, (L.crotchY - y) / (L.crotchY - L.ankleY))); }
       }
       g[i] = gi; e[i] = ei + thick;
     }
-    this.smoothField(g, 2);
     let em = 0; for (let i = 0; i < n; i++) if (g[i] >= 0 && e[i] > em) em = e[i]; return this.clip(g, e, Math.round(1 + 9 * Math.min(1, Math.max(0, (em - 0.02) / 0.06))));
   }
 
@@ -142,7 +140,7 @@ export class Clothing {
       const off = lerp(e[a], e[b], t); rest.push(px, py, pz); pos.push(px + nx * off, py + ny * off, pz + nz * off); nor.push(nx, ny, nz);
       const s = t < 0.5 ? a : b; for (let k = 0; k < 4; k++) { si.push(SI[s * 4 + k]); sw.push(SW[s * 4 + k]); }
     };
-    const edge = (a, b) => { const key = a < b ? a * 1e7 + b : b * 1e7 + a; let v = cache.get(key); if (v !== undefined) return v; const t = g[a] / (g[a] - g[b]); v = pos.length / 3; if (a < b) push(a, b, t); else push(b, a, 1 - t); cache.set(key, v); return v; };
+    const locked = new Set(); const edge = (a, b) => { const key = a < b ? a * 1e7 + b : b * 1e7 + a; let v = cache.get(key); if (v !== undefined) return v; const t = g[a] / (g[a] - g[b]); v = pos.length / 3; if (a < b) push(a, b, t); else push(b, a, 1 - t); cache.set(key, v); locked.add(v); return v; };
     for (let t = 0; t < I.length; t += 3) {
       const a = I[t], b = I[t + 1], c = I[t + 2], ia = g[a] >= 0, ib = g[b] >= 0, ic = g[c] >= 0, cnt = ia + ib + ic; if (!cnt) continue;
       if (cnt === 3) { idx.push(vert(a), vert(b), vert(c)); continue; }
@@ -152,21 +150,21 @@ export class Clothing {
     }
     if (!idx.length) return null;
     const out = { position: Float32Array.from(pos), normal: Float32Array.from(nor), rest: Float32Array.from(rest), skinIndex: Uint16Array.from(si), skinWeight: Float32Array.from(sw), index: Uint32Array.from(idx) };
-    if (smoothOut) this.smoothMesh(out, smoothOut === true ? 1 : smoothOut);
+    if (smoothOut) this.smoothMesh(out, smoothOut === true ? 1 : smoothOut, locked);
     return out;
   }
-  smoothMesh(m, iters) {
+  smoothMesh(m, iters, locked = new Set()) {
     const nv = m.position.length / 3, nb = Array.from({ length: nv }, () => new Set());
     for (let t = 0; t < m.index.length; t += 3) for (let k = 0; k < 3; k++) { nb[m.index[t + k]].add(m.index[t + (k + 1) % 3]); nb[m.index[t + k]].add(m.index[t + (k + 2) % 3]); }
     let a = m.position, b = new Float32Array(a.length);
-    for (let it = 0; it < iters; it++) { for (let i = 0; i < nv; i++) { let x = 0, y = 0, z = 0; const s = nb[i]; if (!s.size) { b.set(a.subarray(i * 3, i * 3 + 3), i * 3); continue; } for (const j of s) { x += a[j * 3]; y += a[j * 3 + 1]; z += a[j * 3 + 2]; } x /= s.size; y /= s.size; z /= s.size; b[i * 3] = a[i * 3] * 0.5 + x * 0.5; b[i * 3 + 1] = a[i * 3 + 1] * 0.5 + y * 0.5; b[i * 3 + 2] = a[i * 3 + 2] * 0.5 + z * 0.5; } [a, b] = [b, a]; }
+    for (let it = 0; it < iters; it++) { for (let i = 0; i < nv; i++) { let x = 0, y = 0, z = 0; const s = nb[i]; if (!s.size || locked.has(i)) { b.set(a.subarray(i * 3, i * 3 + 3), i * 3); continue; } for (const j of s) { x += a[j * 3]; y += a[j * 3 + 1]; z += a[j * 3 + 2]; } x /= s.size; y /= s.size; z /= s.size; b[i * 3] = a[i * 3] * 0.5 + x * 0.5; b[i * 3 + 1] = a[i * 3 + 1] * 0.5 + y * 0.5; b[i * 3 + 2] = a[i * 3 + 2] * 0.5 + z * 0.5; } [a, b] = [b, a]; }
     m.position = a;
   }
 
   // ------------------------------------------------------------------ skirt / robe loft
   skirt(part, layer) {
     const ch = this.ch, L = ch.rig.L, lm = this.landmarks(), field = ch.bodyData.field, zc = -0.004;
-    const topY = { waist: L.waistY - 0.005, hip: L.hipY - 0.01, under: L.waistY + 0.045, knee: L.kneeY + 0.01 }[part.waist] ?? L.waistY;
+    const topY = { waist: L.waistY - 0.005, hip: L.hipY - 0.058, under: L.waistY + 0.045, knee: L.kneeY + 0.01 }[part.waist] ?? L.waistY;
     const hemY = { ankle: L.ankleY + 0.05, calf: lm.calf, knee: lm.knee, thigh: lm.thigh, midthigh: lm.midthigh }[part.hem] ?? lm.knee;
     const NA = 56, NY = 26, ease = part.ease + layer + 0.004;
     const hullAt = y => {
@@ -175,16 +173,16 @@ export class Clothing {
         for (let q = 0.4; q > 0.0; q -= 0.012) if (field(q * sx, y, zc + q * cz) < 0) { let lo = q, hi = q + 0.012; for (let b = 0; b < 5; b++) { const m = (lo + hi) / 2; if (field(m * sx, y, zc + m * cz) < 0) lo = m; else hi = m; } hit = lo; break; }
         r[k] = hit; }
       const o = new Float32Array(NA); for (let k = 0; k < NA; k++) { let m = 0; for (let d = -5; d <= 5; d++) m = Math.max(m, r[(k + d + NA) % NA] * (1 - Math.abs(d) * 0.015)); o[k] = m; }
-      let f = o; for (let pass = 0; pass < 3; pass++) { const h = new Float32Array(NA); for (let k = 0; k < NA; k++) h[k] = (f[(k - 2 + NA) % NA] + f[(k - 1 + NA) % NA] * 2 + f[k] * 3 + f[(k + 1) % NA] * 2 + f[(k + 2) % NA]) / 9; f = h; } return f;
+      let f = o; for (let pass = 0; pass < 6; pass++) { const h = new Float32Array(NA); for (let k = 0; k < NA; k++) h[k] = (f[(k - 2 + NA) % NA] + f[(k - 1 + NA) % NA] * 2 + f[k] * 3 + f[(k + 1) % NA] * 2 + f[(k + 2) % NA]) / 9; f = h; } return f;
     };
     const rings = []; for (let j = 0; j <= NY; j++) { const t = j / NY, y = lerp(topY, hemY, t); rings.push({ t, y, r: hullAt(y) }); }
-    for (let pass = 0; pass < 4; pass++) for (let j = 1; j < NY; j++) for (let k = 0; k < NA; k++) rings[j].r[k] = (rings[j - 1].r[k] + rings[j].r[k] * 2 + rings[j + 1].r[k]) / 4;
+    for (let pass = 0; pass < 9; pass++) for (let j = 1; j < NY; j++) for (let k = 0; k < NA; k++) rings[j].r[k] = (rings[j - 1].r[k] + rings[j].r[k] * 2 + rings[j + 1].r[k]) / 4;
     const pos = [], nor = [], rest = [], si = [], sw = [], idx = [];
     const legF = { straight: 0.9, aline: 0.4, mermaid: 0.8, ball: 0.12 }[part.profile] ?? 0.5;
     const flareAt = (t, y) => { switch (part.profile) { case 'straight': return part.flare * t; case 'aline': return part.flare * Math.pow(t, 1.25); case 'mermaid': return part.flare * Math.pow(Math.max(0, (L.kneeY + 0.02 - y) / (L.kneeY + 0.02 - hemY)), 1.6); case 'ball': return part.flare * Math.pow(t, 0.75); default: return part.flare * t; } };
     for (const R of rings) for (let k = 0; k <= NA; k++) {
       const kk = k % NA, th = kk / NA * Math.PI * 2, sx = Math.sin(th), cz = Math.cos(th);
-      const fl = flareAt(R.t, R.y) * (1 + 0.6 * Math.abs(cz)), r = Math.max(R.r[kk], 0.075) + ease + fl;
+      const fl = flareAt(R.t, R.y) * (1 + 0.6 * Math.abs(cz)), r = Math.max(R.r[kk], 0.075) + ease * (0.4 + 0.6 * sm(0, 0.16, R.t)) + fl;
       const x = r * sx, z = zc + r * cz; pos.push(x, R.y, z); rest.push(x, R.y, z);
       const a = legF * sm(L.crotchY + 0.03, L.crotchY - 0.2, R.y), b = sm(L.kneeY + 0.03, L.kneeY - 0.2, R.y) * 0.7, ls = sm(-0.035, 0.035, x), lw = sm(0.035, 0.09, Math.abs(x));
       const L1 = x >= 0 ? BONE_INDEX.upperLegL : BONE_INDEX.upperLegR, L2 = x >= 0 ? BONE_INDEX.lowerLegL : BONE_INDEX.lowerLegR;
@@ -225,7 +223,6 @@ export class Clothing {
       gU[i] = top - y; eU[i] = 0.0038 + (kind === 'sneaker' ? 0.0015 : 0);
     }
     for (let i = 0; i < n; i++) { const y = P[i * 3 + 1]; gS[i] = sole - y; eS[i] = 0.005 + 0.003 * Math.min(1, Math.max(0, (-N[i * 3 + 1] + 0.1))); }
-    this.smoothField(gU, 1);
     const up = this.clip(gU, eU, false), so = this.clip(gS, eS, false);
     const soleCol = kind === 'sneaker' ? '#e8e4da' : kind === 'slide' || kind === 'sandal' ? w.color : '#1a1a1a';
     if (up) this.addMesh(up, def, w);

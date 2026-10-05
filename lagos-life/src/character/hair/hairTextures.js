@@ -74,3 +74,18 @@ export function stubbleTex() {
   g.strokeStyle = 'rgba(0,0,0,0.12)'; g.lineWidth = 3; for (let y = 0; y < S; y += 10) { g.beginPath(); for (let x = 0; x <= S; x += 8) g.lineTo(x, y + Math.sin(x * 0.12 + y) * 3); g.stroke(); }
   return (cache.stub = tex(c, true, true));
 }
+
+// Solid hair-clump skin: fine streaks running along V (tube length), soft light/dark banding. Lit with anisotropic spec.
+export function clumpTex() {
+  if (cache.clump) return cache.clump;
+  const W = 128, H = 256, c = mk(W, H), g = c.getContext('2d'), b = mk(W, H), gb = b.getContext('2d'), r = mulberry32(31);
+  g.fillStyle = '#808080'; g.fillRect(0, 0, W, H); gb.fillStyle = '#808080'; gb.fillRect(0, 0, W, H);
+  for (let i = 0; i < 150; i++) {
+    const x = r() * W, v = 95 + r() * 90, w = 0.8 + r() * 1.8, a = 0.25 + r() * 0.5;
+    g.strokeStyle = `rgba(${v},${v},${v},${a})`; g.lineWidth = w; gb.strokeStyle = `rgba(${v},${v},${v},${a})`; gb.lineWidth = w;
+    g.beginPath(); gb.beginPath();
+    for (let y = 0; y <= H; y += 16) { const xx = x + Math.sin(y * 0.03 + i) * 1.4; y ? (g.lineTo(xx, y), gb.lineTo(xx, y)) : (g.moveTo(xx, y), gb.moveTo(xx, y)); }
+    g.stroke(); gb.stroke();
+  }
+  return (cache.clump = { map: tex(c, true, true), bump: tex(b, false, true) });
+}

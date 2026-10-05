@@ -53,6 +53,10 @@ export function paintFace(cv, skin, makeup, eyesLayout, fm, seed, opts = {}) {
   rb(0, 0.098, 0.04, 0.03, baseRough - 0.12, 0.7); rb(0, 0.006, 0.014, 0.03, baseRough - 0.16, 0.8); rb(0, -0.058, 0.02, 0.012, baseRough - 0.08, 0.6);
   for (const sg of [-1, 1]) rb(sg * 0.052, 0.022, 0.014, 0.014, baseRough - 0.1, 0.6);
 
+  c.save(); c.globalCompositeOperation = 'screen';
+  for (const sg of [-1, 1]) blob(c, sg * 0.0485, 0.0225, 0.012, 0.005, shade(base, 1.5), 0.16, sg * -0.4);   // cheekbone catch-light
+  blob(c, 0, 0.026, 0.0032, 0.019, shade(base, 1.45), 0.14); blob(c, 0, 0.0045, 0.0042, 0.0042, shade(base, 1.5), 0.14); blob(c, 0, 0.098, 0.03, 0.012, shade(base, 1.4), 0.1);
+  c.restore();
   // ---- imperfections (seeded, subtle)
   const bl = skin.blemish, nspots = Math.round(40 + 160 * bl);
   for (let i = 0; i < nspots; i++) {
@@ -70,7 +74,7 @@ export function paintFace(cv, skin, makeup, eyesLayout, fm, seed, opts = {}) {
   const upper = [...xs.map(x => [x, L.topY(x)]), ...[...xs].reverse().map(x => [x, fm.seamY(x) + 0.0005])];
   const lower = [...xs.map(x => [x, fm.seamY(x) - 0.0005]), ...[...xs].reverse().map(x => [x, L.botY(x)])];
   const lipCol = hx('lip');
-  for (const poly of [upper, lower]) { path(c, poly); c.fillStyle = rgba(lipCol, 0.95); c.fill(); c.lineWidth = 2.5; c.strokeStyle = rgba(lipCol, 0.8); c.stroke(); }
+  for (const poly of [upper, lower]) { c.save(); c.shadowColor = rgba(lipCol, 0.9); c.shadowBlur = 5; path(c, poly); c.fillStyle = rgba(lipCol, 0.95); c.fill(); c.restore(); }
   // lip edge soft (vermilion border) & lip lines
   path(c, xs.map(x => [x, fm.seamY(x)])); c.lineWidth = 0.0013 * sy; c.strokeStyle = rgba(hx('lipInner'), 0.9); c.stroke();
   // ---- nostrils (dark)
@@ -143,7 +147,9 @@ export function paintFace(cv, skin, makeup, eyesLayout, fm, seed, opts = {}) {
   }
   if (mk.lip > 0) {
     const lc = mk.lipColor, a = Math.min(0.95, 0.15 + 0.85 * mk.lip);
-    for (const poly of [upper, lower]) { path(c, poly); c.fillStyle = rgba(lc, a); c.fill(); c.lineWidth = 2; c.strokeStyle = rgba(lc, a); c.stroke(); }
+    for (const poly of [upper, lower]) { c.save(); c.shadowColor = rgba(lc, a); c.shadowBlur = 5; path(c, poly); c.fillStyle = rgba(lc, a); c.fill(); c.restore(); }
+    // glossy centre highlight on the lower lip + soft shading at the corners
+    c.save(); c.globalCompositeOperation = 'screen'; blob(c, 0, fm.c.ly + 0.0008, 0.0075, 0.0022, '#ffd8c0', 0.28 + 0.3 * mk.gloss); c.restore();
     path(c, xs.map(x => [x, fm.seamY(x)])); c.lineWidth = 0.0011 * sy; c.strokeStyle = rgba(shade(lc, 0.45), 0.85 * Math.min(1, mk.lip * 1.2)); c.stroke();
   }
   // lip gloss + finish -> roughness map

@@ -97,7 +97,7 @@ export function createFabricMaterial(fabric, color, variant) {
   const F = FABRICS[fabric] || FABRICS.cotton, m = fabricMaps(fabric, color, variant);
   const mat = new THREE.MeshPhysicalMaterial({ color: 0xffffff, roughness: F.rough, metalness: F.metal || 0, sheen: F.sheen * 0.45, sheenRoughness: 0.6, sheenColor: new THREE.Color(color).lerp(new THREE.Color(1, 1, 1), 0.15),
     side: THREE.DoubleSide, transparent: !!F.alpha, alphaTest: F.alpha ? 0.02 : 0, depthWrite: !F.alpha });
-  if (fabric === 'satin') { mat.clearcoat = 0.08; mat.clearcoatRoughness = 0.5; mat.roughness = 0.42; }
+  if (fabric === 'satin') { mat.clearcoat = 0.02; mat.clearcoatRoughness = 0.5; mat.roughness = 0.5; }
   if (fabric === 'asooke' || fabric === 'brocade') { mat.metalness = 0.08; }
   const U = { uMap: { value: m.map }, uBump: { value: m.bump }, uTile: { value: m.tile }, uBumpScale: { value: fabric === 'satin' ? 0.1 : fabric === 'lace' ? 0.5 : 0.7 }, uAlpha: { value: F.alpha ? 1 : 0 } };
   mat.userData.U = U;

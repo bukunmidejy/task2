@@ -12,7 +12,7 @@ export function paintEyeTexture(irisHex, seed = 1) {
   const g = c.createLinearGradient(0, 0, W, 0); g.addColorStop(0, '#d9cdbd'); g.addColorStop(0.25, '#ece3d6'); g.addColorStop(0.5, '#d7c9b6'); g.addColorStop(1, '#d9cdbd');
   c.fillStyle = g; c.fillRect(0, 0, W, Hh);
   c.fillStyle = 'rgba(160,70,60,0.10)'; for (let i = 0; i < 90; i++) { const x = rng() * W, y = Hh * (0.3 + rng() * 0.4); c.beginPath(); c.moveTo(x, y); c.quadraticCurveTo(x + 15 + rng() * 20, y + (rng() - 0.5) * 20, x + 30 + rng() * 40, y + (rng() - 0.5) * 30); c.lineWidth = 0.6 + rng() * 0.8; c.strokeStyle = 'rgba(150,60,55,0.18)'; c.stroke(); }
-  const cx = W * 0.25, cy = Hh * 0.5, deg = W / 360, R = 29 * deg;       // iris radius 28deg (~11.5mm iris)
+  const cx = W * 0.25, cy = Hh * 0.5, deg = W / 360, R = 32 * deg;       // iris radius 28deg (~11.5mm iris)
   const base = irisHex;
   const rg = c.createRadialGradient(cx, cy, 0, cx, cy, R); rg.addColorStop(0, shade(base, 0.55)); rg.addColorStop(0.35, base); rg.addColorStop(0.8, shade(base, 1.25)); rg.addColorStop(0.94, shade(base, 0.5)); rg.addColorStop(1, '#0a0705');
   c.fillStyle = rg; c.beginPath(); c.arc(cx, cy, R, 0, 7); c.fill();
@@ -20,7 +20,7 @@ export function paintEyeTexture(irisHex, seed = 1) {
   for (let i = 0; i < 260; i++) { const a = rng() * 6.283, r0 = R * (0.22 + rng() * 0.2), r1 = R * (0.7 + rng() * 0.25); c.strokeStyle = rng() < 0.5 ? 'rgba(0,0,0,0.22)' : 'rgba(255,220,170,0.13)'; c.lineWidth = 0.8 + rng(); c.beginPath(); c.moveTo(cx + Math.cos(a) * r0, cy + Math.sin(a) * r0); c.lineTo(cx + Math.cos(a) * r1, cy + Math.sin(a) * r1); c.stroke(); }
   // collarette ring & pupil
   c.strokeStyle = 'rgba(200,140,70,0.25)'; c.lineWidth = 3; c.beginPath(); c.arc(cx, cy, R * 0.4, 0, 7); c.stroke();
-  c.fillStyle = '#050403'; c.beginPath(); c.arc(cx, cy, 11 * deg, 0, 7); c.fill();
+  c.fillStyle = '#050403'; c.beginPath(); c.arc(cx, cy, 12 * deg, 0, 7); c.fill();
   const t = new THREE.CanvasTexture(cv); t.colorSpace = THREE.SRGBColorSpace; t.anisotropy = 8; return t;
 }
 function shade(hex, f) { const v = [1, 3, 5].map(i => Math.min(255, Math.round(parseInt(hex.slice(i, i + 2), 16) * f))); return `rgb(${v})`; }
@@ -38,7 +38,7 @@ export function buildEye({ center, side, radius, irisHex, open = 1, tilt = 0, li
   const pivot = new THREE.Group(); pivot.add(ball); grp.add(pivot);
   // ---- lids as spherical shells with elliptical openings
   const R = radius * 1.07, nU = 60, nV = 12;
-  const pOpen = 24 - 5 * lidFull + 10 * (open - 1), lOpen = -(18 + 5 * (open - 1));
+  const pOpen = 27 - 5 * lidFull + 10 * (open - 1), lOpen = -(20 + 5 * (open - 1));
   const phiMed = -54 * D2R, phiLat = 62 * D2R, phiA = -80 * D2R, phiB = 88 * D2R;
   const makeLid = upper => {
     const pos = [], uvs = [], idx = [], rowEdge = [];

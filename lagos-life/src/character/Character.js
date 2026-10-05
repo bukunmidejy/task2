@@ -4,7 +4,7 @@
 import * as THREE from 'three';
 import { computeRig, BONE_NAMES, BONE_PARENT } from './rig.js';
 import { buildBody } from './body.js';
-import { buildHead, FACE_RECT, faceMorphs } from './head.js';
+import { buildHead, FACE_RECT, faceMorphs, amplify } from './head.js';
 import { buildEye, setBlink, setGaze, eyeColorHex } from './eyes.js';
 import { earGeometry } from './ears.js';
 import { createSkinMaterial, createSkinUniforms, applySkinPalette } from './skinMaterial.js';
@@ -17,7 +17,7 @@ import { buildAccessories } from './accessories.js';
 
 const J = JSON.stringify;
 export const QUALITY = {
-  high:   { body: 0.010, head: 0.0026, faceTex: 2048, hairDensity: 1.0, ear: 0.0012 },
+  high:   { body: 0.0078, head: 0.0024, faceTex: 2048, hairDensity: 1.0, ear: 0.0012 },
   medium: { body: 0.0125, head: 0.0032, faceTex: 1024, hairDensity: 0.6, ear: 0.0016 },
   low:    { body: 0.016, head: 0.0042, faceTex: 1024, hairDensity: 0.35, ear: 0.0022 },
 };
@@ -32,7 +32,7 @@ export class Character {
     this.faceCv = createFaceCanvases(this.q.faceTex);
     this.faceMap = new THREE.CanvasTexture(this.faceCv.color); this.faceMap.colorSpace = THREE.SRGBColorSpace; this.faceMap.anisotropy = 8;
     this.faceRough = new THREE.CanvasTexture(this.faceCv.rough); this.faceRough.colorSpace = THREE.NoColorSpace;
-    this.headMat = createSkinMaterial({ uniforms: this.skinU, map: this.faceMap, roughMap: this.faceRough });
+    this.headMat = createSkinMaterial({ uniforms: this.skinU, map: this.faceMap, roughMap: this.faceRough }); this.headMat.vertexColors = true;
     this.lidMat = this.headMat.clone(); this.lidMat.side = THREE.DoubleSide; this.lidMat.onBeforeCompile = this.headMat.onBeforeCompile; this.lidMat.userData = this.headMat.userData;
     this.skinMats = [this.bodyMat, this.earMat, this.headMat, this.lidMat];
     this.buildSkeleton();
@@ -106,7 +106,7 @@ export class Character {
     const hd = buildHead(s.face, this.asym, h); this.headData = hd;
     const geo = new THREE.BufferGeometry();
     geo.setAttribute('position', new THREE.BufferAttribute(hd.position, 3)); geo.setAttribute('normal', new THREE.BufferAttribute(hd.normal, 3));
-    geo.setAttribute('uv', new THREE.BufferAttribute(hd.uv, 2)); geo.setIndex(new THREE.BufferAttribute(hd.index, 1));
+    geo.setAttribute('uv', new THREE.BufferAttribute(hd.uv, 2)); geo.setAttribute('color', new THREE.BufferAttribute(hd.ao, 3)); geo.setIndex(new THREE.BufferAttribute(hd.index, 1));
     geo.morphAttributes.position = faceMorphs(hd.position, hd.features, hd.layout).map(a => new THREE.BufferAttribute(a, 3));
     geo.morphTargetsRelative = true;
     if (this.headMesh) { this.headMesh.geometry.dispose(); this.headMesh.geometry = geo; this.headMesh.updateMorphTargets(); }
@@ -118,11 +118,11 @@ export class Character {
     // ears
     if (!fast || !this.ears) {
       for (const e of this.ears || []) this.headGroup.remove(e);
-      const eg = earGeometry(s.face); this.ears = [];
+      this.faceA = amplify(s.face); const eg = earGeometry(this.faceA); this.ears = [];
       for (const sg of [-1, 1]) {
         const grp = new THREE.Group(), m = new THREE.Mesh(eg, this.earMat); m.castShadow = true; m.receiveShadow = true;
         m.position.z = -0.012; grp.add(m); grp.scale.x = sg;
-        grp.position.set(sg * 0.0625, 0.0205 + 0.0016 * this.asym.ear * sg, -0.0015); grp.rotation.y = -sg * 0 - (0.30 + 0.22 * s.face.earOut) * (sg > 0 ? 1 : 1) * (sg > 0 ? 1 : 1);
+        grp.position.set(sg * 0.0625, 0.0205 + 0.0016 * this.asym.ear * sg, -0.0015); grp.rotation.y = -sg * 0 - (0.30 + 0.22 * this.faceA.earOut) * (sg > 0 ? 1 : 1) * (sg > 0 ? 1 : 1);
         // rotation sign for mirrored group is applied in local space
         this.headGroup.add(grp); this.ears.push(grp);
       }
@@ -148,7 +148,7 @@ export class Character {
   }
 
   // skin gets its own (lower) reflection level: bright sky in the specular lobe is a grey veil on dark skin
-  setEnvironment(envMap, intensity = 1) { for (const m of this.skinMats) { m.envMap = envMap; m.envMapIntensity = intensity; m.needsUpdate = true; } this.envCache = { envMap, intensity }; }
+  setEnvironment(envMap, intensity = 1) { for (const m of this.skinMats) { m.envMap = envMap; m.envMapIntensity = intensity; m.needsUpdate = true; } this.envCache = { envMap, intensity }; this.hair.setEnv(envMap, intensity * 0.8); }
 
   dispose() { this.root.traverse(o => { o.geometry?.dispose?.(); }); }
 }
