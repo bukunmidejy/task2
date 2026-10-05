@@ -1,0 +1,20 @@
+<!doctype html><html><body style="margin:0;background:#222"><canvas id="c" style="width:100vw;height:100vh"></canvas>
+<script type="module">
+import * as THREE from 'three';
+import { buildHead } from '/src/character/head.js';
+import { faceDefaults } from '/src/data/params.js';
+const q = new URLSearchParams(location.search);
+const f = faceDefaults(); for (const [k,v] of q) if (k in f) f[k] = +v;
+const t0=performance.now(); const g = buildHead(f, null, +(q.get('h')||0.0028)); window.__ms = performance.now()-t0;
+const geo = new THREE.BufferGeometry();
+geo.setAttribute('position', new THREE.BufferAttribute(g.position,3)); geo.setAttribute('normal', new THREE.BufferAttribute(g.normal,3)); geo.setIndex(new THREE.BufferAttribute(g.index,1));
+const r = new THREE.WebGLRenderer({canvas:document.getElementById('c'), antialias:true}); r.setSize(innerWidth, innerHeight, false); r.setScissorTest(true);
+const sc = new THREE.Scene(); sc.background = new THREE.Color(0x303034);
+sc.add(new THREE.Mesh(geo, new THREE.MeshStandardMaterial({color: 0x8a5a3c, roughness:.5})));
+for (const e of g.layout.eye) { const m=new THREE.Mesh(new THREE.SphereGeometry(0.0118,24,16), new THREE.MeshStandardMaterial({color:0xd8d0c8, roughness:.3})); m.position.set(...e); sc.add(m); }
+sc.add(new THREE.HemisphereLight(0xffffff,0x554433,1.0)); const dl=new THREE.DirectionalLight(0xffffff,2.4); dl.position.set(1.5,1.5,3); sc.add(dl);
+const W=innerWidth/3, Hh=innerHeight;
+[0,0.75,1.5708].forEach((yaw,i)=>{ r.setViewport(i*W,0,W,Hh); r.setScissor(i*W,0,W,Hh);
+ const cam = new THREE.PerspectiveCamera(22, W/Hh, .05, 5); cam.position.set(Math.sin(yaw)*.9, 0.05, Math.cos(yaw)*.9); cam.lookAt(0,0.04,0); r.render(sc,cam); });
+window.__done = true;
+</script></body></html>

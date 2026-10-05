@@ -1,0 +1,26 @@
+<!doctype html><html><body style="margin:0;background:#222"><canvas id="c" style="width:100vw;height:100vh"></canvas>
+<script type="module">
+import * as THREE from 'three';
+import { RoomEnvironment } from 'three/examples/jsm/environments/RoomEnvironment.js';
+import { Character } from '/src/character/Character.js';
+import { Animator } from '/src/character/animation.js';
+import { createCharacter } from '/src/core/schema.js';
+import { HEROES } from '/src/data/heroes.js';
+const q = new URLSearchParams(location.search);
+const list = JSON.parse(q.get('s')); const mode=q.get('view')||'head'; const yaw=+(q.get('yaw')||0.35);
+const r = new THREE.WebGLRenderer({canvas:document.getElementById('c'), antialias:true}); r.setSize(innerWidth, innerHeight, false); r.setScissorTest(true);
+r.toneMapping = THREE.ACESFilmicToneMapping; r.outputColorSpace = THREE.SRGBColorSpace; r.shadowMap.enabled = true;
+const sc = new THREE.Scene(); sc.background = new THREE.Color(0x2a2a2e);
+const pm = new THREE.PMREMGenerator(r); const env = pm.fromScene(new RoomEnvironment(), 0.04).texture; sc.environment = env; sc.environmentIntensity = 0.55;
+const key = new THREE.DirectionalLight(0xfff0e0, 1.7); key.position.set(1.5,2.2,3); sc.add(key);
+const fill = new THREE.DirectionalLight(0xc0d0ff, 0.5); fill.position.set(-2,1,1); sc.add(fill);
+const rim = new THREE.DirectionalLight(0xffe0c0, 1.2); rim.position.set(-1,2,-3); sc.add(rim);
+const chars=[]; const W=innerWidth/list.length, Hh=innerHeight; const t0=performance.now();
+list.forEach((o,i)=>{ const st=o.hero?HEROES[o.hero]():createCharacter({seed:7+i,...o}); if(o.hair){ Object.assign(st.hair,o.hair);}  const ch=new Character({quality:q.get('quality')||'high'}); ch.apply(st); ch.setEnvironment(env,0.55); const an=new Animator(ch); an.pos.set(i*3,0,0); an.resetFeet(); an.update(1/60); sc.add(ch.root); chars.push({ch,an,st}); });
+chars.forEach(({an,ch})=>{ for(let k=0;k<30;k++){ an.update(1/60);} ch.root.updateMatrixWorld(true); });
+window.__ms=(performance.now()-t0).toFixed(0);
+chars.forEach(({ch,an,st},i)=>{ r.setViewport(i*W,0,W,Hh); r.setScissor(i*W,0,W,Hh);
+ const cam=new THREE.PerspectiveCamera(mode==='full'?26:+(q.get('fov')||24), W/Hh, .05, 60); const H=st.body.height/100; const x=i*3;
+ if(mode==='full'){ cam.position.set(x+Math.sin(yaw)*5, H*.55, Math.cos(yaw)*5); cam.lookAt(x,H*.5,0);} else { const hy=ch.rig.J.head[1]+0.03+(+q.get('ly')||0); const d=+(q.get('d')||1.15); cam.position.set(x+Math.sin(yaw)*d, hy, Math.cos(yaw)*d); cam.lookAt(x,hy-0.0,0);} r.render(sc,cam); });
+window.__done=true;
+</script></body></html>

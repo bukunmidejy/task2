@@ -1,0 +1,10 @@
+import { chromium } from 'playwright-core';
+const [,, url, secs = '40'] = process.argv;
+const b = await chromium.launch({ executablePath: '/opt/pw-browsers/chromium-1194/chrome-linux/chrome', args: ['--use-angle=swiftshader', '--enable-unsafe-swiftshader', '--ignore-gpu-blocklist', '--no-sandbox'] });
+const p = await b.newPage({ viewport: { width: 500, height: 700 } });
+p.on('console', m => console.log('[console.' + m.type() + ']', m.text().slice(0, 500)));
+p.on('pageerror', e => console.log('[pageerror]', e.message.slice(0, 800), e.stack?.slice(0, 600)));
+await p.goto('http://localhost:5173' + url);
+await p.waitForTimeout(+secs * 1000);
+console.log('done flag', await p.evaluate(() => window.__done), 'ms', await p.evaluate(() => window.__ms));
+await b.close();
