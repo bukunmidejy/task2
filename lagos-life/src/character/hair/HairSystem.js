@@ -167,7 +167,7 @@ export class HairSystem {
       { bone: 'chest', o: [0, 0.02, -0.04], r: 0.125 * L.sw }, { bone: 'chest', o: [0, -0.02, 0.03], r: 0.115 * L.sw }, { bone: 'chest', o: [0, -0.1, -0.03], r: 0.12 * L.sw }, { bone: 'spine', o: [0, 0.02, -0.03], r: 0.115 * L.sw },
       { bone: 'upperArmL', o: [0.03, -0.11, 0], r: 0.05, arm: 1 }, { bone: 'upperArmR', o: [-0.03, -0.11, 0], r: 0.05, arm: 1 },
     ];
-    this.colBuf = this.colliders.map(() => new THREE.Vector3()); const worn = Object.keys(this.ch.state.clothing.worn).length > 0; this.colR = this.colliders.map(c => c.r * (c.head ? this.ch.rig.L.hs : 1) + 0.004 + (c.head ? 0 : worn ? 0.016 : 0));
+    this.colBuf = this.colliders.map(() => new THREE.Vector3()); const worn = Object.keys(this.ch.state.clothing.worn).length > 0; this.colR = this.colliders.map(c => c.r * (c.head ? this.ch.rig.L.hs : 1) + 0.004 + (c.head ? 0 : worn ? 0.03 : 0.006));
   }
   updateColliders(M) {
     const ch = this.ch, inv = _m.copy(ch.root.matrixWorld).invert();

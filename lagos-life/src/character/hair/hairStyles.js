@@ -141,7 +141,7 @@ export function generateHair(styleId, hair, ctx, density = 1) {
         const r = ctx.surf(th, ph), L = (locs ? 0.1 + 0.55 * len : 0.12 + 0.72 * len) * (0.92 + 0.14 * R()), P = locs ? 14 : 20;
         const wf = Math.max(0, Math.cos(th)) * sm(0.2, 1.1, ph), sgn = Math.sign(r.p[0]) || 1;
         const d0 = norm([Math.sin(th) * 0.9 + sgn * 1.2 * wf, -0.15, -0.6 * wf + Math.cos(th) * 0.2 * (1 - wf)]);
-        const pts = curtain(ctx, r, L, P + 6, { off: 0.006, lift: 0.002, wave: locs ? 0.004 : 0, ph: R() * 6, spread: 0.02, back: 0.5 }); void d0;
+        const pts = curtain(ctx, r, L, P + 6, { off: 0.006, lift: 0.002, wave: locs ? 0.004 : 0, ph: R() * 6, spread: 0.02, back: 0.5, frontP: 0.12 }); void d0;
         out.tubes.push({ pts, rigid: 2, stiff: locs ? 0.3 : 0.32, rad: rad * (locs ? 0.8 + 0.5 * R() : 1), kind: locs ? 'loc' : 'braid', tapered, ends: !locs, beadsAt: null });
       }
     }
