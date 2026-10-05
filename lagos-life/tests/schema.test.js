@@ -54,3 +54,14 @@ test('v1 saves migrate', () => {
   const v1 = { schema: 'lagoslife.character', version: 1, seed: 5, skin: { tone: 0.8 } };
   assert.equal(deserialize(v1).skin.depth, 0.8);
 });
+
+import { computeRig } from '../src/character/rig.js';
+import { bodyDefaults } from '../src/data/params.js';
+test('rig: proportions stay natural across the allowed height range', () => {
+  for (const h of [150, 168, 196]) {
+    const { L, J } = computeRig({ ...bodyDefaults(), height: h });
+    assert.ok(J.head[1] < h / 100 && J.head[1] > 0.82 * h / 100, 'head pivot height');
+    assert.ok(L.shHalf * 2 < 0.5 && L.shHalf * 2 > 0.28, 'shoulder width ' + L.shHalf * 2);
+    assert.ok(L.kneeY > L.ankleY && L.hipY > L.kneeY && L.waistY > L.hipY && L.shoulderY > L.waistY);
+  }
+});
