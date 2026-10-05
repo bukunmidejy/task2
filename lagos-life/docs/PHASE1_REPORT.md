@@ -26,6 +26,9 @@ stating this plainly rather than claiming otherwise.
 | 13 | Shown in a Lagos environment | **Met, stylised** (boxy but unmistakable). |
 | 14 | Communicates intended visual direction | **Partly** — direction yes, cinematic realism no. |
 
+## Polish pass (post-review)
+Face: removed carved nasolabial grooves and softened cheek/jaw blends (no more aged jowl lines), narrowed face ~8 %, opened eyes and raised eye-slider sensitivity. Hair: removed the grey environment-specular veil from all hair materials, de-glinted silk press, denser/less edge-on flow hair, darker/smaller twist-out cards. Face remains smooth and doll-like; still not photoreal.
+
 ## What was built
 
 Web prototype (three.js + Vite). Everything procedural, no binary assets. ~9k lines.
