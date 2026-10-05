@@ -43,7 +43,7 @@ export function createSkinMaterial({ uniforms, map = null, roughMap = null, thin
          vec3 sc = uSssColor * material.diffuseColor;
          reflectedLight.directDiffuse += directLight.color * ( band * 1.5 + wrap * 0.55 ) * uSss * sc * RECIPROCAL_PI; }`);
     chunk = chunk.replace('reflectedLight.indirectDiffuse += irradiance * BRDF_Lambert( material.diffuseColor );',
-      'reflectedLight.indirectDiffuse += irradiance * BRDF_Lambert( material.diffuseColor ) * ( vec3( 1.0 ) + uSss * 0.8 * uSssColor );');
+      'reflectedLight.indirectDiffuse += irradiance * BRDF_Lambert( material.diffuseColor ) * ( vec3( 1.0 ) + uSss * 0.55 * uSssColor );');
     sh.fragmentShader = sh.fragmentShader
       .replace('#include <common>', `#include <common>\nvarying vec3 vSkinPos; uniform vec3 uSssColor; uniform float uSss, uPore, uWet, uVar;\n${GLSL_NOISE}
         vec3 skinPerturb( vec3 surf_pos, vec3 surf_norm, vec2 dHdxy, float faceDirection ) {

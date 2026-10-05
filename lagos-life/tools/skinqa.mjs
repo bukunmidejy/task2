@@ -3,7 +3,7 @@ import { chromium } from 'playwright-core'; import { PNG } from 'pngjs'; import 
 const b = await chromium.launch({ executablePath: '/opt/pw-browsers/chromium-1194/chrome-linux/chrome', args: ['--use-angle=swiftshader', '--enable-unsafe-swiftshader', '--ignore-gpu-blocklist', '--no-sandbox'] });
 const p = await b.newPage({ viewport: { width: 1280, height: 800 } }); const errs = [];
 p.on('pageerror', e => errs.push(e.message)); await p.goto('http://localhost:5173/?quality=medium'); await p.waitForFunction(() => window.__app, null, { timeout: 90000 }); await p.waitForTimeout(2500);
-const tones = [[0.06, 'golden'], [0.3, 'red'], [0.5, 'neutral'], [0.72, 'cool'], [0.9, 'neutral'], [1.0, 'blueblack']]; const lights = ['day', 'indoor', 'night']; const rows = []; fs.mkdirSync('.shots/skin', { recursive: true });
+const tones = [[0.06, 'golden'], [0.3, 'red'], [0.5, 'neutral'], [0.72, 'cool'], [0.9, 'neutral'], [1.0, 'blueblack']]; const lights = (process.env.ONLY || 'day,indoor,night').split(','); const rows = []; fs.mkdirSync('.shots/skin', { recursive: true });
 await p.evaluate(() => { __app.store.mutate(d => { d.hair.style = 'shortcut'; d.makeup.preset = 'bare'; }); });
 for (const L of lights) for (const [depth, ut] of tones) {
   await p.evaluate(([L, depth, ut]) => { __app.setLighting(L); __app.store.mutate(d => { d.skin.depth = depth; d.skin.undertone = ut; }); __app.camRig.setMode('face'); __app.camRig.snap(__app.an); }, [L, depth, ut]);

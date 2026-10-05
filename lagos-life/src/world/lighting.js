@@ -16,7 +16,7 @@ function skyScene(top, horizon, ground, sun = null) {
 
 export const PRESETS = {
   day: { label: 'Daylight', exposure: 1.0, skinEnv: 0.28, sun: { color: '#fff0d8', i: 3.4, pos: [5, 7, 4] }, fill: { color: '#ffe9d2', i: 0.5 }, rim: { color: '#ffe8c8', i: 0.9 }, hemi: { sky: '#fff1e0', gnd: '#8a5a3a', i: 0.6 }, env: 0.75, bg: '#a9cbe8', fog: ['#cfdde6', 0.012] },
-  indoor: { label: 'Indoor', exposure: 1.1, skinEnv: 0.35, fillPos: [-4, 2, 3], sun: { color: '#ffcf9a', i: 2.8, pos: [3, 5, 4.5] }, fill: { color: '#ffb878', i: 0.9 }, rim: { color: '#ffd9a8', i: 1.1 }, hemi: { sky: '#ffe3c2', gnd: '#5a4030', i: 0.5 }, env: 0.6, practical: 0, bg: '#2a211b', fog: null },
+  indoor: { label: 'Indoor', exposure: 1.1, skinEnv: 0.35, fillPos: [-4, 2, 3], sun: { color: '#ffd8ae', i: 2.8, pos: [3, 5, 4.5] }, fill: { color: '#ffb878', i: 0.9 }, rim: { color: '#ffd9a8', i: 1.1 }, hemi: { sky: '#ffe3c2', gnd: '#5a4030', i: 0.5 }, env: 0.6, practical: 0, bg: '#2a211b', fog: null },
   night: { label: 'Night', exposure: 1.55, skinEnv: 0.3, fillPos: [4, 1.6, 2.5], sun: { color: '#a9bcff', i: 1.1, pos: [-4, 6, 3] }, fill: { color: '#8aa0f0', i: 1.6 }, rim: { color: '#ffb36b', i: 2.2 }, hemi: { sky: '#34478a', gnd: '#2a1c12', i: 0.6 }, env: 0.5, bg: '#05070f', fog: ['#0a0e1c', 0.02], practical: 48 },
 };
 
