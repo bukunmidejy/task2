@@ -10,6 +10,8 @@ import { earGeometry } from './ears.js';
 import { createSkinMaterial, createSkinUniforms, applySkinPalette } from './skinMaterial.js';
 import { createFaceCanvases, paintFace } from './faceTexture.js';
 import { sanitize, asymmetry } from '../core/schema.js';
+import { HairSystem } from './hair/HairSystem.js';
+import { Clothing } from './clothing/Clothing.js';
 
 const J = JSON.stringify;
 export const QUALITY = {
@@ -33,7 +35,7 @@ export class Character {
     this.skinMats = [this.bodyMat, this.earMat, this.headMat, this.lidMat];
     this.buildSkeleton();
     this.headGroup = new THREE.Group(); this.headGroup.name = 'headGroup'; this.bones.head.add(this.headGroup);
-    this.bodyMesh = null; this.headMesh = null;
+    this.bodyMesh = null; this.headMesh = null; this.hair = new HairSystem(this); this.clothing = new Clothing(this); this.gaitScale = 1; this.heelData = { angle: 0, plantY: 0 };
     this.blink = { t: 2 + Math.random() * 3, phase: 0 }; this.expr = { smile: 0, brow: 0, squint: 0 };
   }
 
@@ -75,6 +77,8 @@ export class Character {
       this.buildFace(s, fast); timing.face = performance.now() - t1;
     }
     if (ch('skin') || ch('makeup') || faceChanged || ch('eyes')) { this.skinPal = applySkinPalette(this.skinMats, this.skinU, s.skin); this.paintSkin(); }
+    if (faceChanged || ch('hair') || ch('eyes') && false || bodyChanged) { const t2 = performance.now(); this.hair.build(); timing.hair = performance.now() - t2; }
+    if (bodyChanged || ch('clothing') || ch('hair') && (prev?.hair.style === 'headwrap' || s.hair.style === 'headwrap' || prev?.hair.wrapColor !== s.hair.wrapColor) || faceChanged) { const t3 = performance.now(); this.clothing.build(); timing.clothing = performance.now() - t3; }
     this.timing = timing;
     for (const fn of this.listeners || []) fn(s, { bodyChanged, faceChanged, ch });
     return timing;
@@ -121,6 +125,8 @@ export class Character {
       }
     }
   }
+
+  setHeel(h) { this.heelData = h; }
 
   setMorph(ex) {
     const m = this.headMesh?.morphTargetInfluences; if (!m) return;

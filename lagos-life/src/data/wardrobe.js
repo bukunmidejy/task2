@@ -49,7 +49,7 @@ export const GARMENTS = [
   g('blazer', 'Tailored blazer', 'outer', ['corporate', 'date', 'church'], 58000, 'twill', [{ type: 'wrap', torso: { hem: 'thigh', neck: 'v', neckDepth: 0.55, sleeve: 1, frontOpen: 0.04, ease: { bust: 0.04, waist: 0.045, hip: 0.05, arm: 0.035 } } }], NEUTRALS, { fabrics: ['twill', 'linen'] }),
   g('denimjacket', 'Denim jacket', 'outer', ['casual', 'nightlife'], 34000, 'denim', [{ type: 'wrap', torso: { hem: 'hip', neck: 'v', neckDepth: 0.5, sleeve: 1, frontOpen: 0.05, ease: { bust: 0.04, waist: 0.04, hip: 0.04, arm: 0.035 } } }], DENIM),
   g('agbada', 'Agbada', 'outer', ['traditional', 'wedding'], 95000, 'brocade', [
-    { type: 'wrap', torso: { hem: 'hip', neck: 'boat', neckDepth: 0.3, sleeve: 1, sleeveFlare: 0.13, ease: { bust: 0.07, waist: 0.08, hip: 0.085, arm: 0.06 } } },
+    { type: 'wrap', torso: { hem: 'hip', neck: 'boat', neckDepth: 0.3, sleeve: 1, sleeveFlare: 0.075, ease: { bust: 0.05, waist: 0.06, hip: 0.065, arm: 0.04 } } },
     { type: 'skirt', waist: 'hip', hem: 'ankle', flare: 0.1, ease: 0.07, profile: 'aline' }], BRIGHTS, { fabrics: ['brocade', 'asooke', 'cotton'] }),
   // ---- bottoms
   g('jeans', 'High-rise jeans', 'bottom', ['casual', 'nightlife', 'date'], 22000, 'denim', [{ type: 'wrap', legs: { hem: 'ankle', ease: 0.012, rise: 'waist' } }], DENIM),

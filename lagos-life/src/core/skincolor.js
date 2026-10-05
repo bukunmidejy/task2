@@ -18,7 +18,7 @@ export const luminance = ([r, g, b]) => 0.2126 * r + 0.7152 * g + 0.0722 * b;
 // hue (deg), chroma multiplier, sss hue shift, specular tint (cool for blue-black)
 const UNDERTONE = {
   golden:    { h: 62, c: 1.00, sss: 32, spec: [1.0, 0.96, 0.88] },
-  red:       { h: 36, c: 1.12, sss: 28, spec: [1.0, 0.92, 0.9] },
+  red:       { h: 40, c: 0.95, sss: 28, spec: [1.0, 0.92, 0.9] },
   neutral:   { h: 49, c: 0.88, sss: 30, spec: [1.0, 0.97, 0.94] },
   cool:      { h: 27, c: 0.86, sss: 24, spec: [0.95, 0.96, 1.0] },
   blueblack: { h: 24, c: 0.62, sss: 26, spec: [0.86, 0.92, 1.0] },

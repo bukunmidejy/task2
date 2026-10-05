@@ -1,5 +1,5 @@
 // Body + hands geometry from parameters: SDF primitives -> narrow-band marching cubes.
-import { PrimList, meshSDF } from './sdf.js';
+import { PrimList, meshSDF, makeField } from './sdf.js';
 import { BONE_INDEX, FINGERS } from './rig.js';
 import { clamp } from '../core/rng.js';
 
@@ -95,7 +95,9 @@ export function buildBody(rig, bp, asym, h = 0.011) {
     const pad = 0.045;
     parts.push(meshSDF(handPrims(rig, sd), { min: mn.map(v => v - pad), max: mx.map(v => v + pad), h: Math.max(0.0034, h * 0.34), B: 4, tau: 0.006 }));
   }
-  return mergeParts(parts);
+  const torsoOnly = new PrimList(); const armBones = new Set(Object.entries(B).filter(([k]) => /^(clav|upperArm|foreArm|hand)/.test(k)).map(([, v]) => v));
+  torsoOnly.rows = prims.rows.filter(r => !armBones.has(r[12]));
+  const merged = mergeParts(parts); merged.field = makeField(torsoOnly); return merged;
 }
 
 function mergeParts(parts) {

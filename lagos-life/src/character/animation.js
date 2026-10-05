@@ -61,7 +61,7 @@ export class Animator {
     const run = Math.min(1, Math.max(0, (this.vel - 1.7) / 1.4));
     const sc = L.s, legL = (J.upperLegL[1] - J.footL[1]);
     // gait timing
-    const stepLen = (0.40 + 0.20 * run) * L.H * 0.95, cadence = this.vel / Math.max(stepLen, 0.2); // steps/s
+    const stepLen = (0.40 + 0.20 * run) * L.H * 0.95 * (ch.gaitScale || 1), cadence = this.vel / Math.max(stepLen, 0.2); // steps/s
     const cyc = Math.max(0.0001, cadence / 2); if (moving) this.phase = (this.phase + cyc * dt) % 1;
     const sf = 0.62 - 0.26 * run;                 // stance fraction
     // ------------------------------------------------ idle micro-motion
@@ -80,7 +80,7 @@ export class Animator {
     const hipW = i => { const sg = i === 0 ? 1 : -1; return V(...(i === 0 ? J.upperLegL : J.upperLegR)).sub(hipsRest); };
     const worldOf = (v, y = 0) => V(this.pos.x + v.x * Math.cos(this.yaw) + v.z * Math.sin(this.yaw), y, this.pos.z - v.x * Math.sin(this.yaw) + v.z * Math.cos(this.yaw));
     const restAnkleLocal = i => { const sg = i === 0 ? 1 : -1; return V(sg * Math.abs(J.footL[0]), J.footL[1], J.footL[2]); };
-    const lift = 0.07 + 0.08 * run, plantY = this.input.heel || 0;
+    const lift = 0.07 + 0.08 * run, plantY = ch.heelData?.plantY || 0, heelLiftA = ch.heelData?.angle || 0;
     const targets = [V(), V()], footPitch = [0, 0], toePitch = [0, 0];
     for (let i = 0; i < 2; i++) {
       const f = this.feet[i], p = (ph + (i === 0 ? 0 : 0.5)) % 1;
@@ -107,7 +107,7 @@ export class Animator {
         f.target.lerp(land, 0.35);
         const e = ease(u), e2 = u < 0.5 ? 2 * u * u : 1 - Math.pow(-2 * u + 2, 2) / 2;
         targets[i].copy(f.start).lerp(f.target, e2); targets[i].y = J.footL[1] + Math.sin(Math.PI * Math.pow(u, 0.8)) * lift * (1 - 0.3 * u) + plantY;
-        footPitch[i] = (u < 0.5 ? -0.5 * Math.sin(Math.PI * u) : 0.25 * Math.sin(Math.PI * (u - 0.5) * 2) * 0.0 + 0.3 * (u - 0.5) * 2 * (1 - (u - 0.5) * 2 * 0.3)) * (0.7 + 0.5 * run) * 0 + (u < 0.5 ? -0.35 * Math.sin(Math.PI * u * 2) : 0.28 * Math.sin(Math.PI * (u - 0.5) * 2));
+        footPitch[i] = u < 0.5 ? 0.38 * Math.sin(Math.PI * u * 2) : -0.30 * Math.sin(Math.PI * (u - 0.5) * 2); // toe-down at push-off, toe-up before heel strike
         toePitch[i] = u < 0.25 ? 0.5 * (1 - u * 4) : 0;
         void e;
       } else {
@@ -115,7 +115,7 @@ export class Animator {
         // roll: heel strike -> flat -> heel lift
         const heelUp = u > 0.72 ? ease((u - 0.72) / 0.28) : 0;
         targets[i].set(pl.x, J.footL[1] + plantY + heelUp * 0.045, pl.z);
-        footPitch[i] = u < 0.12 ? 0.28 * (1 - u / 0.12) : -heelUp * 0.5;
+        footPitch[i] = u < 0.12 ? -0.28 * (1 - u / 0.12) : heelUp * 0.55;
         toePitch[i] = heelUp * 0.55;
         // plant continues from the last swing target
       }
@@ -155,7 +155,7 @@ export class Animator {
       B[`upperLeg${sd}`].quaternion.copy(hipsLocalQ.clone().invert().multiply(qThigh));
       B[`lowerLeg${sd}`].quaternion.copy(qThigh.clone().invert().multiply(qShin));
       // foot: stays aligned with the character heading, pitched by gait roll; toe bends at push-off
-      const heelLift = this.heelLift || 0;
+      const heelLift = -heelLiftA;
       const qFoot = eul(footPitch[i] - heelLift, sg * -0.08 * (1 - w), 0);
       B[`foot${sd}`].quaternion.copy(qShin.clone().invert().multiply(qFoot));
       B[`toe${sd}`].quaternion.copy(eul(-toePitch[i] + heelLift * 0.0, 0, 0));
@@ -217,6 +217,6 @@ export class Animator {
     });
     ch.setMorph?.(ex);
     // ------------------------------------------------ head velocity for hair physics
-    ch.updateMatrixForPhysics?.();
+    ch.root.updateMatrixWorld(true); ch.hair.update(dt);
   }
 }
