@@ -38,8 +38,8 @@ export function buildEye({ center, side, radius, irisHex, open = 1, tilt = 0, li
   const pivot = new THREE.Group(); pivot.add(ball); grp.add(pivot);
   // ---- lids as spherical shells with elliptical openings
   const R = radius * 1.07, nU = 60, nV = 12;
-  const pOpen = 21 - 5 * lidFull + 10 * (open - 1), lOpen = -(16.5 + 5 * (open - 1));
-  const phiMed = -50 * D2R, phiLat = 58 * D2R, phiA = -80 * D2R, phiB = 88 * D2R;
+  const pOpen = 24 - 5 * lidFull + 10 * (open - 1), lOpen = -(18 + 5 * (open - 1));
+  const phiMed = -54 * D2R, phiLat = 62 * D2R, phiA = -80 * D2R, phiB = 88 * D2R;
   const makeLid = upper => {
     const pos = [], uvs = [], idx = [], rowEdge = [];
     for (let j = 0; j <= nV; j++) for (let i = 0; i <= nU; i++) {

@@ -84,10 +84,10 @@ export function generateHair(styleId, hair, ctx, density = 1) {
     const N = Math.round(o.count * S), L0 = o.L;
     for (let i = 0; i < N; i++) {
       const r = ctx.randomRoot(0.02), x = r.p[0], wf = Math.max(0, Math.cos(r.th)) * sm(0.2, 1.0, r.ph + 0.2), sgn = Math.sign(x - o.partX) || 1;
-      const sideDrive = o.side ? (sgn > 0 ? 1.4 : 0.5) : 1;
+      const sideDrive = o.side ? (sgn > 0 ? 1.3 : 0.7) : 1;
       const d0 = norm([sgn * wf * 0.9 * sideDrive, -0.45, -0.25 * wf]); const dd = add(d0, r.n, 0.45);
       const L = L0 * (0.9 + 0.2 * R()) * (o.layer ? 0.75 + 0.3 * sm(-0.5, 0.7, r.ph) * 0 + 0.25 * (1 - Math.abs(Math.sin(r.th))) : 1);
-      out.ribbons.push({ pts: curtain(ctx, r, L, 16, { vol: vol * 0.6 + 0.2, wave: o.wave, ph: R() * 6, freq: o.freq, back: o.side ? 0.1 : 0.45 }), rigid: 2, stiff: Math.max(o.stiff, 0.25), w: o.w * (0.8 + 0.4 * R()), roll: (R() - 0.5) * 1.2, wave: o.wave });
+      out.ribbons.push({ pts: curtain(ctx, r, L, 16, { vol: vol * 0.6 + 0.2, wave: o.wave, ph: R() * 6, freq: o.freq, back: o.side ? 0.1 : 0.45 }), rigid: 2, stiff: Math.max(o.stiff, 0.25), w: o.w * (0.8 + 0.4 * R()), roll: (R() - 0.5) * 2.4, wave: o.wave });
     }
   };
   switch (styleId) {
@@ -109,7 +109,7 @@ export function generateHair(styleId, hair, ctx, density = 1) {
       break;
     }
     case 'knotless': case 'box': braids(styleId === 'box' ? 0.0165 : 0.0135, styleId === 'box' ? 0.0050 : 0.0040, styleId === 'knotless'); break;
-    case 'locs': braids(0.024, 0.0046, false, true); break;
+    case 'locs': braids(0.026, 0.0058, false, true); break;
     case 'cornrows': cornrows(false); break;
     case 'fulani': cornrows(true); break;
     case 'afro': puffs(0.045 + 0.12 * vol, 4600, 'coil', 0.034); break;

@@ -45,7 +45,6 @@ export function paintFace(cv, skin, makeup, eyesLayout, fm, seed, opts = {}) {
     blob(c, sg * 0.036, -0.002, 0.026, 0.026, hx('cheek'), 0.45);                 // cheek warmth
     blob(c, sg * 0.0335, 0.0405, 0.020, 0.0085, hx('underEye'), 0.62, sg * 0.15);   // under-eye
     blob(c, sg * 0.049, 0.074, 0.016, 0.014, shade(base, 0.92), 0.4);              // temples
-    blob(c, sg * 0.026, -0.030, 0.020, 0.012, shade(base, 0.94), 0.35);            // beside the mouth
   }
   blob(c, 0, 0.004, 0.017, 0.022, hx('nose'), 0.7);           // nose
   blob(c, 0, -0.058, 0.026, 0.014, hx('chin'), 0.5);          // chin
