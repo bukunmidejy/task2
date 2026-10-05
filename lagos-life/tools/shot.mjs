@@ -7,7 +7,7 @@ p.on('console', m => { if (['error', 'warning'].includes(m.type())) console.log(
 p.on('pageerror', e => console.log('[pageerror]', e.message.slice(0, 600)));
 await p.goto('http://localhost:5173' + url);
 await p.waitForFunction(f => window[f], flag, { timeout: 60000 }).catch(e => console.log('timeout waiting', flag));
-await p.waitForTimeout(500);
+await p.waitForTimeout(+(process.env.WAIT || 500));
 await p.screenshot({ path: out });
 console.log('ms', await p.evaluate(() => window.__ms));
 await b.close();

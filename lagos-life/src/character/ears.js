@@ -12,7 +12,7 @@ export function earGeometry(f) {
   const rim = [], n = 20;
   for (let i = 0; i <= n; i++) { const t = (-35 + (i / n) * 290) * Math.PI / 180; // C-shaped helix: opens toward the face-front lower side
     rim.push([0.0098, ey + Math.sin(t + 0.3) * 0.0285 * sz * (t > 2.4 ? 0.82 : 1), ez - Math.cos(t + 0.3) * 0.0148 * sz]); }
-  for (let i = 0; i < rim.length - 1; i++) P.seg(H, rim[i], rim[i + 1], 0.0026, 0.0026, 0.0026, 0.0026, 0.002);
+  for (let i = 0; i < rim.length - 1; i++) P.seg(H, rim[i], rim[i + 1], 0.0022, 0.0022, 0.0022, 0.0022, 0.003);
   const anti = []; for (let i = 0; i <= 12; i++) { const t = (-10 + (i / 12) * 220) * Math.PI / 180; anti.push([0.0088, 0.0035 + Math.sin(t + 0.4) * 0.0165 * sz, -0.0015 - Math.cos(t + 0.4) * 0.0078 * sz]); }
   for (let i = 0; i < anti.length - 1; i++) P.seg(H, anti[i], anti[i + 1], 0.0021, 0.0021, 0.0021, 0.0021, 0.003);
   P.ell(H, [0.0085, -0.0305 * sz * lobe * 0.9 + 0.0034 * lobe, 0.002 * sz], 0.0042, 0.0085 * lobe * sz, 0.0088 * sz, 0.004);  // lobe

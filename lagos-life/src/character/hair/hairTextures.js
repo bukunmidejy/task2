@@ -37,7 +37,7 @@ export function coilTex(kind = 'coil') {
   } else { // twist-out: soft wavy clumps running along V
     for (let i = 0; i < 9; i++) {
       const x0 = 14 + i * 27 + r() * 8; g.lineWidth = 9 + r() * 4;
-      for (let k = 0; k < 4; k++) { const v = 50 + r() * 70; g.strokeStyle = `rgba(${v},${v},${v},0.95)`; g.beginPath(); for (let y = 0; y <= S; y += 6) { const x = x0 + Math.sin(y * 0.09 + i + k * 1.7) * 7 + (k - 1.5) * 4; y ? g.lineTo(x, y) : g.moveTo(x, y); } g.stroke(); }
+      for (let k = 0; k < 4; k++) { const v = 30 + r() * 45; g.strokeStyle = `rgba(${v},${v},${v},0.95)`; g.beginPath(); for (let y = 0; y <= S; y += 6) { const x = x0 + Math.sin(y * 0.09 + i + k * 1.7) * 7 + (k - 1.5) * 4; y ? g.lineTo(x, y) : g.moveTo(x, y); } g.stroke(); }
     }
   }
   g.globalCompositeOperation = 'destination-in'; g.fillStyle = 'rgba(0,0,0,1)'; g.fillRect(0, 0, S, S);

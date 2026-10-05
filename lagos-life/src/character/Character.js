@@ -12,6 +12,8 @@ import { createFaceCanvases, paintFace } from './faceTexture.js';
 import { sanitize, asymmetry } from '../core/schema.js';
 import { HairSystem } from './hair/HairSystem.js';
 import { Clothing } from './clothing/Clothing.js';
+import { buildNails } from './nails.js';
+import { buildAccessories } from './accessories.js';
 
 const J = JSON.stringify;
 export const QUALITY = {
@@ -79,6 +81,7 @@ export class Character {
     if (ch('skin') || ch('makeup') || faceChanged || ch('eyes')) { this.skinPal = applySkinPalette(this.skinMats, this.skinU, s.skin); this.paintSkin(); }
     if (faceChanged || ch('hair') || ch('eyes') && false || bodyChanged) { const t2 = performance.now(); this.hair.build(); timing.hair = performance.now() - t2; }
     if (bodyChanged || ch('clothing') || ch('hair') && (prev?.hair.style === 'headwrap' || s.hair.style === 'headwrap' || prev?.hair.wrapColor !== s.hair.wrapColor) || faceChanged) { const t3 = performance.now(); this.clothing.build(); timing.clothing = performance.now() - t3; }
+    if (bodyChanged || faceChanged || ch('accessories') || ch('nails') || ch('eyes') && false) { const t4 = performance.now(); this.rebuildAddons(); timing.addons = performance.now() - t4; }
     this.timing = timing;
     for (const fn of this.listeners || []) fn(s, { bodyChanged, faceChanged, ch });
     return timing;
@@ -126,6 +129,10 @@ export class Character {
     }
   }
 
+  rebuildAddons() {
+    for (const o of this.addons || []) { o.parent?.remove(o); o.traverse?.(c => { c.geometry?.dispose?.(); }); }
+    this.addons = [...buildNails(this), ...buildAccessories(this)];
+  }
   setHeel(h) { this.heelData = h; }
 
   setMorph(ex) {
@@ -140,7 +147,8 @@ export class Character {
     for (const e of this.eyes || []) e.userData.buildLashes(s.makeup.lashes, 0.3 + 0.7 * s.makeup.lashes, 0.00022 + 0.0001 * s.makeup.lashes);
   }
 
-  setEnvironment(envMap, intensity = 1) { for (const m of this.skinMats) { m.envMap = envMap; m.envMapIntensity = intensity; } }
+  // skin gets its own (lower) reflection level: bright sky in the specular lobe is a grey veil on dark skin
+  setEnvironment(envMap, intensity = 1) { for (const m of this.skinMats) { m.envMap = envMap; m.envMapIntensity = intensity; m.needsUpdate = true; } this.envCache = { envMap, intensity }; }
 
   dispose() { this.root.traverse(o => { o.geometry?.dispose?.(); }); }
 }

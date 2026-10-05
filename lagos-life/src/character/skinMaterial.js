@@ -25,7 +25,7 @@ export function createSkinUniforms() {
 export function createSkinMaterial({ uniforms, map = null, roughMap = null, thin = 0 } = {}) {
   const U = uniforms || createSkinUniforms();
   const mat = new THREE.MeshPhysicalMaterial({
-    color: 0xffffff, roughness: roughMap ? 1 : 0.52, metalness: 0, specularIntensity: 0.75,
+    color: 0xffffff, roughness: roughMap ? 1 : 0.52, metalness: 0, specularIntensity: 0.55,
     sheen: 0.18, sheenRoughness: 0.6, sheenColor: new THREE.Color(0.5, 0.35, 0.28), clearcoat: 0.04, clearcoatRoughness: 0.4,
     map, roughnessMap: roughMap,
   });
@@ -43,7 +43,7 @@ export function createSkinMaterial({ uniforms, map = null, roughMap = null, thin
          vec3 sc = uSssColor * material.diffuseColor;
          reflectedLight.directDiffuse += directLight.color * ( band * 1.5 + wrap * 0.55 ) * uSss * sc * RECIPROCAL_PI; }`);
     chunk = chunk.replace('reflectedLight.indirectDiffuse += irradiance * BRDF_Lambert( material.diffuseColor );',
-      'reflectedLight.indirectDiffuse += irradiance * BRDF_Lambert( material.diffuseColor ) * ( vec3( 1.0 ) + uSss * 0.35 * uSssColor );');
+      'reflectedLight.indirectDiffuse += irradiance * BRDF_Lambert( material.diffuseColor ) * ( vec3( 1.0 ) + uSss * 0.8 * uSssColor );');
     sh.fragmentShader = sh.fragmentShader
       .replace('#include <common>', `#include <common>\nvarying vec3 vSkinPos; uniform vec3 uSssColor; uniform float uSss, uPore, uWet, uVar;\n${GLSL_NOISE}
         vec3 skinPerturb( vec3 surf_pos, vec3 surf_norm, vec2 dHdxy, float faceDirection ) {
@@ -75,6 +75,6 @@ export function applySkinPalette(mats, uniforms, skin) {
     m.needsUpdate = true;
   }
   uniforms.uSssColor.value.setRGB(p.sss[0], p.sss[1], p.sss[2]);
-  uniforms.uSss.value = 0.5 + 0.3 * (1 - skin.depth * 0.6);
+  uniforms.uSss.value = 0.3 + 0.2 * (1 - skin.depth * 0.6);
   return p;
 }

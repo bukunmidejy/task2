@@ -11,7 +11,7 @@ const add = (a, b, k = 1) => [a[0] + b[0] * k, a[1] + b[1] * k, a[2] + b[2] * k]
 const sm = (a, b, x) => { const t = Math.min(1, Math.max(0, (x - a) / (b - a))); return t * t * (3 - 2 * t); };
 const lerp = (a, b, t) => a + (b - a) * t;
 
-export function makeCtx(hd, seed) {
+export function makeCtx(hd, seed, body = null) {
   const field = hd.field, rng = mulberry32(seed ^ 0xa11ce);
   const grad = p => { const e = 0.0015; return norm([field(p[0] + e, p[1], p[2]) - field(p[0] - e, p[1], p[2]), field(p[0], p[1] + e, p[2]) - field(p[0], p[1] - e, p[2]), field(p[0], p[1], p[2] + e) - field(p[0], p[1], p[2] - e)]); };
   // hairline latitude (rad) as a function of azimuth theta (0 = front)
@@ -31,7 +31,9 @@ export function makeCtx(hd, seed) {
   };
   const inRegion = (th, ph, margin = 0) => ph > hairLat(th) + margin && ph < 1.45;
   const randomRoot = (margin = 0.0) => { for (let k = 0; k < 40; k++) { const th = (rng() * 2 - 1) * Math.PI, ph = -0.5 + rng() * 2.0; if (inRegion(th, ph, margin)) return surf(th, ph); } return surf(0, 1.2); };
-  return { field, grad, hairLat, surf, surfDir, inRegion, randomRoot, rng, dirOf, C };
+  // keep generated hair outside the torso (so the styled rest shape and the collision shape agree)
+  const pushOut = body ? (p, margin) => { const hs = body.hs, o = body.origin; const w = q => [o[0] + q[0] * hs, o[1] + q[1] * hs, o[2] + q[2] * hs]; let q = p; for (let k = 0; k < 3; k++) { const wq = w(q), d = body.field(wq[0], wq[1], wq[2]); if (d >= margin) break; const e = 0.004, g = norm([body.field(wq[0] + e, wq[1], wq[2]) - body.field(wq[0] - e, wq[1], wq[2]), body.field(wq[0], wq[1] + e, wq[2]) - body.field(wq[0], wq[1] - e, wq[2]), body.field(wq[0], wq[1], wq[2] + e) - body.field(wq[0], wq[1], wq[2] - e)]); q = add(q, g, (margin - d) / hs); } return q; } : null;
+  return { pushOut, field, grad, hairLat, surf, surfDir, inRegion, randomRoot, rng, dirOf, C };
 }
 
 // follow the head, then hang. Returns points in head-local space.
@@ -57,17 +59,18 @@ function curtain(ctx, r, L, P, o = {}) {
   const front = Math.abs(th0) < 1.25, thE = front ? sgn * (1.25 + (o.back ?? 0.35) * (1 - Math.abs(th0) / 1.25)) : th0;
   const phE = -0.42, lenHead = Math.max(0.01, (r.ph - phE) * 0.092);
   const pts = [add(r.p, r.n, o.lift ?? 0.003)]; const seg = L / (P - 1); let travelled = 0, p = pts[0];
-  const spread = (ctx.rng() - 0.5) * (o.spread ?? 0.012);
+  const spread = (ctx.rng() - 0.5) * (o.spread ?? 0.012); if (o.frontSide === undefined) o = { ...o, frontSide: ctx.rng() < (o.frontP ?? 0.45) };
   for (let i = 1; i < P; i++) {
     travelled += seg;
     if (travelled < lenHead) {
       const u = travelled / lenHead, th = th0 + (thE - th0) * u * u * (3 - 2 * u), ph = r.ph + (phE - r.ph) * u;
       const s = ctx.surf(th, ph); p = add(s.p, s.n, (o.off ?? 0.005) + (o.vol || 0) * 0.02 * (1 - u));
     } else {
-      const d = travelled - lenHead, ex = sgn * Math.max(Math.abs(Math.sin(thE)) * 0.112, Math.abs(Math.sin(thE)) > 0.5 ? 0.13 : 0), ez = -0.012 + Math.cos(thE) * 0.108 - (Math.cos(thE) < -0.3 ? 0.012 : 0);
+      const d = travelled - lenHead, sideK = Math.abs(Math.sin(thE)) > 0.55, ex = sgn * Math.max(Math.abs(Math.sin(thE)) * 0.112, sideK ? 0.105 : 0), ez = sideK ? (o.frontSide ? 0.05 : -0.075) : -0.012 + Math.cos(thE) * 0.108 - (Math.cos(thE) < -0.3 ? 0.012 : 0);
       const last = pts[pts.length - 1], k = Math.min(1, d / 0.08);
       p = [last[0] + (ex + spread * (1 + d * 3) - last[0]) * 0.35 * k + (0), last[1] - seg, last[2] + (ez - last[2]) * 0.35 * k];
     }
+    if (travelled >= lenHead && ctx.pushOut) p = ctx.pushOut(p, o.bodyMargin ?? 0.03);
     if (o.wave) { const w = o.wave * Math.sin(i * (o.freq || 1.3) + (o.ph || 0)); p = [p[0] + w, p[1], p[2] + w * 0.6]; }
     pts.push(p);
   }
@@ -88,12 +91,12 @@ export function generateHair(styleId, hair, ctx, density = 1) {
     }
   };
   switch (styleId) {
-    case 'silkpress': flow({ count: 900, L: 0.2 + 0.5 * len, partX: 0, w: 0.022, stiff: 0.05 }); break;
-    case 'bonestraight': flow({ count: 900, L: 0.3 + 0.6 * len, partX: 0, w: 0.022, stiff: 0.03 }); break;
-    case 'bob': flow({ count: 900, L: 0.15 + 0.1 * len, partX: 0.008, w: 0.022, stiff: 0.09, layer: false, side: true }); break;
-    case 'closurewig': flow({ count: 900, L: 0.3 + 0.45 * len, partX: 0, w: 0.022, stiff: 0.04, wave: 0.02, freq: 0.9 }); break;
-    case 'frontalwig': flow({ count: 900, L: 0.35 + 0.5 * len, partX: 0.03, w: 0.022, stiff: 0.04, side: true, wave: 0.012, freq: 1.0 }); break;
-    case 'curlywig': flow({ count: 900, L: 0.2 + 0.35 * len, partX: 0, w: 0.026, stiff: 0.10, wave: 0.14, freq: 1.5 }); break;
+    case 'silkpress': flow({ count: 1500, L: 0.2 + 0.5 * len, partX: 0, w: 0.026, stiff: 0.05 }); break;
+    case 'bonestraight': flow({ count: 1500, L: 0.3 + 0.6 * len, partX: 0, w: 0.026, stiff: 0.03 }); break;
+    case 'bob': flow({ count: 1500, L: 0.15 + 0.1 * len, partX: 0.008, w: 0.026, stiff: 0.09, layer: false, side: true }); break;
+    case 'closurewig': flow({ count: 1500, L: 0.3 + 0.45 * len, partX: 0, w: 0.026, stiff: 0.04, wave: 0.02, freq: 0.9 }); break;
+    case 'frontalwig': flow({ count: 1500, L: 0.35 + 0.5 * len, partX: 0.03, w: 0.026, stiff: 0.04, side: true, wave: 0.012, freq: 1.0 }); break;
+    case 'curlywig': flow({ count: 1600, L: 0.2 + 0.35 * len, partX: 0, w: 0.032, stiff: 0.2, wave: 0.02, freq: 0.7 }); break;
     case 'ponytail': {
       const A = [0, 0.096, -0.092], N = Math.round(380 * S);
       for (let i = 0; i < N; i++) {
@@ -170,12 +173,12 @@ export function generateHair(styleId, hair, ctx, density = 1) {
     for (let i = 0; i < 900 * S; i++) { const r = ctx.randomRoot(0.0); if (r.ph < 0.55) continue; out.cards.push({ pts: [add(r.p, r.n, 0.001), add(r.p, r.n, Lm * 0.6), add(r.p, r.n, Lm)], w: 0.012, tex: 'coil', roll: R() * 6 }); }
   }
   function twistout() {
-    const N = Math.round(900 * S), L0 = 0.07 + 0.12 * len;
+    const N = Math.round(1900 * S), L0 = 0.07 + 0.12 * len;
     for (let i = 0; i < N; i++) {
       const r = ctx.randomRoot(0.0), t = sm(0, 0.15, r.ph - ctx.hairLat(r.th)), L = L0 * (0.5 + 0.5 * t) * (0.85 + 0.3 * R());
       const dir = norm([r.n[0] * 0.9 + (R() - 0.5) * 0.4, r.n[1] * 0.7 - 0.05, r.n[2] * 0.9 + (R() - 0.5) * 0.4]);
       let p = add(r.p, r.n, 0.003); const pts = [p]; let d = dir; for (let j = 1; j < 6; j++) { d = norm([d[0], d[1] - 0.22, d[2]]); p = add(p, d, L / 5 * (1 + 0.15 * vol)); pts.push(p); }
-      out.cards.push({ pts, w: 0.034 + 0.02 * R(), tex: 'twist', roll: R() * 6 });
+      out.cards.push({ pts, w: 0.018 + 0.012 * R(), tex: 'twist', roll: R() * 6 });
     }
     out.scalp = { mode: 'dark', alpha: 1 };
   }

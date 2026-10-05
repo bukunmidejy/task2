@@ -186,6 +186,7 @@ export class Animator {
       const sw = Math.sin((ph + opp) * 2 * Math.PI) * w * (0.38 + 0.5 * run) * (sg > 0 ? 1 : 1);
       const armIn = 0.19 + 0.05 * Math.sin(t * 0.6 + i) * (1 - w) - 0.05 * run;
       let ua = eul(-sw * (i === 0 ? 1 : 1) - 0.03, 0, -sg * armIn), fa = eul(-(0.14 + 0.2 * Math.abs(sw) + 0.5 * run + 0.03 * Math.sin(t * 1.1 + i)), 0, 0), ha = eul(0, 0, 0);
+      if (this.pose === 'selfie' && sd === 'R') { ua = eul(-0.85, 0, -sg * 0.55); fa = eul(-1.95, 0, 0.0); ha = eul(-0.2, 0, 0); }
       if (this.pose === 'handsHips') { ua = eul(0.15, 0, -sg * -0.35); fa = eul(-1.8, 0, 0); }
       if (this.handPose[sd] === 'holdBag') { fa = eul(-0.9, 0, 0); }
       if (this.gesture && this.gesture.name === 'wave' && sd === 'R') {

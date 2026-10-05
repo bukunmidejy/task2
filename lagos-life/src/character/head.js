@@ -11,7 +11,7 @@ const HB = BONE_INDEX.head;
 export function faceLayout(f, a) {
   const A = k => (a && a[k]) || 0;
   const ex = 0.0328 * (1 + 0.11 * f.eyeSpacing), ey = 0.0432 + 0.0042 * f.eyeHeight, ez = 0.0585;
-  const eyeR = 0.0118;
+  const eyeR = 0.0122;
   const L = {
     eyeR, eye: [[-ex + 0, ey - 0.0009 * A('eye'), ez], [ex, ey + 0.0009 * A('eye'), ez]], // [right(-x), left(+x)]
     eyeOpen: 1 + 0.16 * f.eyeSize, eyeTilt: f.eyeTilt, lidFull: f.eyelid,
@@ -27,22 +27,22 @@ export function headPrims(f, a) {
   // ---- skull & face mass
   P.add();
   P.ell(HB, [0, 0.068 + 0.002 * f.forehead, -0.0135], 0.0670 + 0.0030 * f.faceWidth, 0.0845 + 0.0035 * f.forehead, 0.0905, 0.03);
-  P.seg(HB, [0, 0.036, 0.020], [0, -0.010 + dy * 0.6, 0.030], 0.0600 + 0.0040 * f.faceWidth, 0.0485 + 0.004 * f.faceWidth, 0.058, 0.052, 0.03);
-  P.ell(HB, [0, -0.027 + dy, 0.0165], 0.0430 + 0.005 * f.jawWidth + 0.003 * f.faceWidth - 0.002 * f.jawLine, 0.037, 0.0605, 0.03);
+  P.seg(HB, [0, 0.036, 0.020], [0, -0.010 + dy * 0.6, 0.030], 0.0575 + 0.0040 * f.faceWidth, 0.0470 + 0.004 * f.faceWidth, 0.058, 0.052, 0.03);
+  P.ell(HB, [0, -0.027 + dy, 0.0165], 0.0400 + 0.005 * f.jawWidth + 0.003 * f.faceWidth - 0.002 * f.jawLine, 0.037, 0.0605, 0.03);
   for (const sg of [-1, 1]) {
     const j = 1 + 0.12 * A('jaw') * sg;
-    P.ell(HB, [sg * (0.0425 + 0.0045 * f.jawWidth) * j, -0.0140 + dy, -0.0105], 0.0135 + 0.0040 * f.jawLine + 0.002 * f.jawWidth, 0.027, 0.024 + 0.005 * f.jawLine, 0.022);
+    P.ell(HB, [sg * (0.0385 + 0.0045 * f.jawWidth) * j, -0.0140 + dy, -0.0105], 0.0115 + 0.0040 * f.jawLine + 0.002 * f.jawWidth, 0.027, 0.024 + 0.005 * f.jawLine, 0.022);
   }
-  P.ell(HB, [A('jaw') * 0.0012, -0.0495 + dy - 0.0012 * f.chinProj, 0.0575 + 0.0075 * f.chinProj], 0.0185 + 0.0060 * f.chinWidth, 0.0175, 0.0195 + 0.003 * f.chinProj, 0.018);
+  P.ell(HB, [A('jaw') * 0.0012, -0.0495 + dy - 0.0012 * f.chinProj, 0.0575 + 0.0075 * f.chinProj], 0.0170 + 0.0060 * f.chinWidth, 0.0175, 0.0195 + 0.003 * f.chinProj, 0.018);
   for (const sg of [-1, 1]) {
     const c = 1 + 0.12 * A('cheek') * sg;
-    P.ell(HB, [sg * 0.0345, -0.0085, 0.0475], (0.0235 + 0.0085 * f.cheekFull) * c, 0.0290 + 0.003 * f.cheekFull, 0.0240 + 0.0080 * f.cheekFull, 0.03);
+    P.ell(HB, [sg * 0.0310, -0.0085, 0.0475], (0.0200 + 0.0085 * f.cheekFull) * c, 0.0275 + 0.003 * f.cheekFull, 0.0235 + 0.0080 * f.cheekFull, 0.03);
     P.ell(HB, [sg * (0.0505 + 0.002 * f.faceWidth), 0.0205, 0.0335], 0.0145 + 0.0055 * f.cheekbone, 0.0125 + 0.002 * f.cheekbone, 0.0215 + 0.0070 * f.cheekbone, 0.02);
   }
   P.ell(HB, [0, 0.095 + 0.004 * f.forehead, 0.0515 - 0.0065 * f.foreheadSlope], 0.0515 + 0.002 * f.faceWidth, 0.0365 + 0.0085 * f.forehead, 0.0405, 0.03);
   for (const sg of [-1, 1]) {
     const bh = 0.0615 + 0.0030 * f.browHeight + 0.0008 * A('brow') * sg;
-    P.ell(HB, [sg * 0.0275, bh, 0.0765 - 0.0015 * f.eyeDepth], 0.0285, 0.0082 + 0.0030 * f.browRidge, 0.0110 + 0.0040 * f.browRidge, 0.012);
+    P.ell(HB, [sg * 0.0275, bh, 0.0765 - 0.0015 * f.eyeDepth], 0.0270, 0.0072 + 0.0030 * f.browRidge, 0.0095 + 0.0040 * f.browRidge, 0.012);
   }
   P.ell(HB, [0, -0.052 + dy * 0.5, 0.0], 0.032, 0.026, 0.038, 0.03); // under-jaw fill into the neck
   // ---- nose
@@ -57,7 +57,7 @@ export function headPrims(f, a) {
   }
   P.seg(HB, [nz, tipY - 0.003, tipZ - 0.008], [0, subY - 0.0005, 0.0885], 0.0040, 0.0045, 0.0042, 0.0050, 0.005); // columella
   // ---- lips (two horizontal capsules + side segments that curve back around the arch)
-  const my = L.mouthY, lw = 0.0252 * (1 + 0.13 * f.lipWidth), lu = f.lipUpper, ll = f.lipLower;
+  const my = L.mouthY, lw = 0.0238 * (1 + 0.13 * f.lipWidth), lu = f.lipUpper, ll = f.lipLower;
   const uz = 0.0825 - 0.0005 * f.lipUpper, ty = 0.0030 * f.mouthTilt, as = A('mouth') * 0.0011;
   const uy = my + 0.0034 + 0.0010 * lu, ly = my - 0.0046 - 0.0014 * ll;
   const urx = 0.0034 + 0.0029 * lu, lrx = 0.0046 + 0.0032 * ll;
@@ -80,7 +80,7 @@ export function headPrims(f, a) {
   }
   for (const sg of [-1, 1]) {
     P.ell(HB, [sg * (0.0088 + 0.0030 * f.noseWidth + 0.0014 * f.nostril), subY - 0.0036, 0.0958], 0.0036 + 0.0020 * f.nostril, 0.0072, 0.0070, 0.003);
-    P.seg(HB, [sg * (0.0215 + 0.004 * f.noseWidth), subY + 0.0035, 0.0845], [sg * 0.0300, my + 0.0030, 0.0765], 0.0011, 0.0008, 0.0020, 0.0014, 0.012); // nasolabial fold
+    P.seg(HB, [sg * (0.0215 + 0.004 * f.noseWidth), subY + 0.0035, 0.0845], [sg * 0.0300, my + 0.0030, 0.0765], 0.0007, 0.0005, 0.0013, 0.0009, 0.012); // nasolabial fold
   }
   P.ell(HB, [0, my - 0.0148, 0.0805], 0.0125, 0.0016, 0.0090, 0.006);  // mentolabial crease
   P.ell(HB, [0, subY + 0.0028, 0.0955], 0.0028, 0.0020, 0.0030, 0.004); // philtrum dimple

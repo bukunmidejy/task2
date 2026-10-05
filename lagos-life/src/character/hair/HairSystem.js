@@ -28,7 +28,7 @@ export class HairSystem {
   build() {
     this.clear(); const ch = this.ch, s = ch.state, hd = ch.headData, hair = s.hair;
     this.style = hair.style; if (!hd || hair.style === 'none' || hair.style === 'headwrap') return;
-    const ctx = makeCtx(hd, s.seed), desc = generateHair(hair.style, { ...hair, edges: hair.edges }, ctx, ch.q.hairDensity);
+    const ctx = makeCtx(hd, s.seed, ch.bodyData?.field ? { field: ch.bodyData.field, hs: ch.rig.L.hs, origin: ch.rig.J.head } : null), desc = generateHair(hair.style, { ...hair, edges: hair.edges }, ctx, ch.q.hairDensity);
     this.desc = desc; const col = this.color(), rng = mulberry32(s.seed + 5);
     this.buildScalp(desc.scalp, ctx, hd, col);
     if (desc.cards.length) this.buildCards(desc.cards, col, rng);
@@ -40,7 +40,7 @@ export class HairSystem {
   mat(kind) {
     if (this.mats[kind]) return this.mats[kind];
     let m;
-    if (kind === 'strand') m = new THREE.MeshPhysicalMaterial({ map: strandTex(), alphaTest: 0.38, alphaToCoverage: true, side: THREE.DoubleSide, roughness: 0.5, anisotropy: 0.6, specularIntensity: 0.35, sheen: 0.05, sheenRoughness: 0.5, sheenColor: new THREE.Color(0.18, 0.15, 0.13), vertexColors: true });
+    if (kind === 'strand') m = new THREE.MeshPhysicalMaterial({ map: strandTex(), alphaTest: 0.38, alphaToCoverage: true, side: THREE.DoubleSide, roughness: 0.7, anisotropy: 0.3, specularIntensity: 0.1, sheen: 0.04, sheenRoughness: 0.5, sheenColor: new THREE.Color(0.18, 0.15, 0.13), vertexColors: true });
     else if (kind === 'coil' || kind === 'twist') m = new THREE.MeshPhysicalMaterial({ map: coilTex(kind), alphaTest: 0.35, alphaToCoverage: true, side: THREE.DoubleSide, roughness: 0.85, sheen: 0.1, sheenRoughness: 0.7, sheenColor: new THREE.Color(0.15, 0.12, 0.1), vertexColors: true });
     else if (kind === 'braid') { const t = braidTex(); m = new THREE.MeshPhysicalMaterial({ map: t.map, bumpMap: t.bump, bumpScale: 2.0, roughness: 0.48, sheen: 0.08, sheenRoughness: 0.5, sheenColor: new THREE.Color(0.18, 0.15, 0.13), vertexColors: true }); }
     else if (kind === 'loc') { const t = locTex(); m = new THREE.MeshPhysicalMaterial({ map: t.map, bumpMap: t.bump, bumpScale: 2.5, roughness: 0.78, sheen: 0.08, sheenColor: new THREE.Color(0.15, 0.12, 0.1), vertexColors: true }); }
@@ -163,7 +163,7 @@ export class HairSystem {
       { bone: 'chest', o: [0, 0.02, -0.04], r: 0.125 * L.sw }, { bone: 'chest', o: [0, -0.02, 0.03], r: 0.115 * L.sw }, { bone: 'chest', o: [0, -0.1, -0.03], r: 0.12 * L.sw }, { bone: 'spine', o: [0, 0.02, -0.03], r: 0.115 * L.sw },
       { bone: 'upperArmL', o: [0.03, -0.11, 0], r: 0.05, arm: 1 }, { bone: 'upperArmR', o: [-0.03, -0.11, 0], r: 0.05, arm: 1 },
     ];
-    this.colBuf = this.colliders.map(() => new THREE.Vector3()); this.colR = this.colliders.map(c => c.r * (c.head ? this.ch.rig.L.hs : 1) + 0.004);
+    this.colBuf = this.colliders.map(() => new THREE.Vector3()); const worn = Object.keys(this.ch.state.clothing.worn).length > 0; this.colR = this.colliders.map(c => c.r * (c.head ? this.ch.rig.L.hs : 1) + 0.004 + (c.head ? 0 : worn ? 0.016 : 0));
   }
   updateColliders(M) {
     const ch = this.ch, inv = _m.copy(ch.root.matrixWorld).invert();
@@ -205,7 +205,7 @@ export class HairSystem {
           Pv[k] = P[k]; Pv[k + 1] = P[k + 1]; Pv[k + 2] = P[k + 2];
           P[k] += vx + ax * dt2 * flex; P[k + 1] += vy + ay * dt2; P[k + 2] += vz + az * dt2 * flex;
         }
-        for (let it = 0; it < 2; it++) for (let i = s0 + m.rigid; i < e; i++) {
+        for (let it = 0; it < 3; it++) for (let i = s0 + m.rigid; i < e; i++) {
           const k = i * 3, p = k - 3;
           // shape memory: lean toward the styled shape (rotated with head yaw only so gravity still wins on tilt)
           const st = m.stiff * wetK * (1 - 0.55 * ((i - s0) / (m.n - 1)));

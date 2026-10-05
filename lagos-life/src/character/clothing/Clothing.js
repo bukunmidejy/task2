@@ -195,7 +195,7 @@ export class Clothing {
       for (const [bi, w] of wl) { si.push(bi); sw.push(w); }
     }
     const row = NA + 1;
-    for (let j = 0; j < NY; j++) for (let k = 0; k < NA; k++) { const a = j * row + k, b = a + 1, c = a + row, d = c + 1; idx.push(a, b, c, b, d, c); }
+    for (let j = 0; j < NY; j++) for (let k = 0; k < NA; k++) { const a = j * row + k, b = a + 1, c = a + row, d = c + 1; idx.push(a, c, b, b, c, d); }
     const nrm = new Float32Array(pos.length), p3 = i => [pos[i * 3], pos[i * 3 + 1], pos[i * 3 + 2]];
     for (let j = 0; j <= NY; j++) for (let k = 0; k <= NA; k++) {
       const i = j * row + k, ik0 = j * row + (k + NA - 1) % NA, ik1 = j * row + (k + 1) % NA, j0 = Math.max(0, j - 1) * row + k, j1 = Math.min(NY, j + 1) * row + k;

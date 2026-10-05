@@ -42,7 +42,7 @@ export function paintFace(cv, skin, makeup, eyesLayout, fm, seed, opts = {}) {
   blob(c, 0, 0.098, 0.050, 0.030, hx('forehead'), 0.55); // forehead a touch lighter / oilier
   for (let i = 0; i < 2; i++) {
     const sg = i ? 1 : -1;
-    blob(c, sg * 0.036, -0.002, 0.026, 0.026, hx('cheek'), 0.65);                 // cheek warmth
+    blob(c, sg * 0.036, -0.002, 0.026, 0.026, hx('cheek'), 0.45);                 // cheek warmth
     blob(c, sg * 0.0335, 0.0405, 0.020, 0.0085, hx('underEye'), 0.62, sg * 0.15);   // under-eye
     blob(c, sg * 0.049, 0.074, 0.016, 0.014, shade(base, 0.92), 0.4);              // temples
     blob(c, sg * 0.026, -0.030, 0.020, 0.012, shade(base, 0.94), 0.35);            // beside the mouth
@@ -75,7 +75,7 @@ export function paintFace(cv, skin, makeup, eyesLayout, fm, seed, opts = {}) {
   // lip edge soft (vermilion border) & lip lines
   path(c, xs.map(x => [x, fm.seamY(x)])); c.lineWidth = 0.0013 * sy; c.strokeStyle = rgba(hx('lipInner'), 0.9); c.stroke();
   // ---- nostrils (dark)
-  for (const [nx, ny] of fm.nostrils) blob(c, nx, ny - 0.0008, 0.0046, 0.0052, '#120806', 0.88);
+  for (const [nx, ny] of fm.nostrils) blob(c, nx, ny - 0.0006, 0.0030, 0.0036, '#150a07', 0.72);
   // ---- brows (natural): hair strokes along the arc
   const browDark = shade(base, 0.32), bcol = mixHex(browDark, '#0c0705', 0.5);
   const browDensity = 0.5 + 0.5 * mk.brows;
@@ -102,7 +102,7 @@ export function paintFace(cv, skin, makeup, eyesLayout, fm, seed, opts = {}) {
     const g = c.createRadialGradient(X(0), Y(0.02), 0, X(0), Y(0.02), 0.095 * sx); g.addColorStop(0, fcol); g.addColorStop(0.82, fcol); g.addColorStop(1, rgba(fcol, 0));
     c.fillStyle = g; c.fillRect(0, 0, S, S); c.restore();
     // re-draw nostrils/mouth seam lightly so foundation doesn't erase them
-    for (const [nx, ny] of fm.nostrils) blob(c, nx, ny - 0.0008, 0.0044, 0.005, '#120806', 0.8);
+    for (const [nx, ny] of fm.nostrils) blob(c, nx, ny - 0.0006, 0.0030, 0.0036, '#150a07', 0.65);
     path(c, xs.map(x => [x, fm.seamY(x)])); c.lineWidth = 0.0013 * sy; c.strokeStyle = rgba(hx('lipInner'), 0.9); c.stroke();
   }
   if (mk.concealer > 0) for (const sg of [-1, 1]) blob(c, sg * 0.0335, 0.0395, 0.019, 0.0075, mixHex(base, '#c89060', 0.12), 0.7 * mk.concealer, sg * 0.15);

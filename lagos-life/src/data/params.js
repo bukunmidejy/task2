@@ -2,7 +2,8 @@
 // randomisation all read from here. Ranges are deliberately NATURAL - no cartoon extremes.
 // face params are in [-1, 1] (0 = canonical average); body params have physical units where useful.
 
-const f = (key, label, group, extra = {}) => ({ key, label, group, min: -1, max: 1, def: 0, step: 0.01, ...extra });
+const DEF = { lipUpper: 0.25, lipLower: 0.35, mouthTilt: 0.6, browRidge: -0.45, cheekFull: -0.05, jawWidth: -0.3, jawLine: -0.1, noseWidth: -0.15, noseTip: -0.1, eyeSize: 0.25, cupid: 0.2, forehead: -0.1, chinWidth: -0.1, faceWidth: -0.25, browThick: -0.15, nostril: -0.1, earOut: -0.1 };
+const f = (key, label, group, extra = {}) => ({ key, label, group, min: -1, max: 1, def: DEF[key] ?? 0, step: 0.01, ...extra });
 
 export const FACE_PARAMS = [
   f('faceWidth', 'Face width', 'Shape'), f('faceLength', 'Face length', 'Shape'),
