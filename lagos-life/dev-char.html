@@ -1,0 +1,33 @@
+<!doctype html><html><body style="margin:0;background:#222"><canvas id="c" style="width:100vw;height:100vh"></canvas>
+<script type="module">
+import * as THREE from 'three';
+import { RoomEnvironment } from 'three/examples/jsm/environments/RoomEnvironment.js';
+import { Character } from '/src/character/Character.js';
+import { Animator } from '/src/character/animation.js';
+import { createCharacter } from '/src/core/schema.js';
+const q = new URLSearchParams(location.search);
+const over = q.get('state') ? JSON.parse(q.get('state')) : {};
+const st = createCharacter({ seed: 7, skin: { depth: +(q.get('depth')||0.62), undertone: q.get('ut')||'golden' }, ...over });
+const r = new THREE.WebGLRenderer({canvas:document.getElementById('c'), antialias:true}); r.setSize(innerWidth, innerHeight, false);
+r.toneMapping = THREE.ACESFilmicToneMapping; r.toneMappingExposure = 1.0; r.outputColorSpace = THREE.SRGBColorSpace;
+r.shadowMap.enabled = true;
+const sc = new THREE.Scene(); sc.background = new THREE.Color(0x2a2a2e);
+const pm = new THREE.PMREMGenerator(r); const env = pm.fromScene(new RoomEnvironment(), 0.04).texture; sc.environment = env; sc.environmentIntensity = 0.55;
+const key = new THREE.DirectionalLight(0xfff0e0, 1.7); key.position.set(1.5,2.2,3); sc.add(key);
+const fill = new THREE.DirectionalLight(0xc0d0ff, 0.5); fill.position.set(-2,1,1); sc.add(fill);
+const rim = new THREE.DirectionalLight(0xffe0c0, 1.2); rim.position.set(-1,2,-3); sc.add(rim);
+const ground = new THREE.Mesh(new THREE.CircleGeometry(3,48).rotateX(-Math.PI/2), new THREE.MeshStandardMaterial({color:0x3a3a3e, roughness:.9})); sc.add(ground);
+const ch = new Character({quality:q.get('quality')||'high'}); sc.add(ch.root); ch.setEnvironment(env, 0.55);
+const t0=performance.now(); const tm = ch.apply(st); window.__ms = JSON.stringify(tm)+' total '+(performance.now()-t0).toFixed(0);
+const an = new Animator(ch); window.__an = an; window.__ch = ch;
+if (q.get('walk')) { an.input.speed = +q.get('walk'); an.input.heading = 0; }
+const frames = +(q.get('frames')||0); for (let i=0;i<frames;i++){ an.update(1/60); ch.root.updateMatrixWorld(true); }
+if (q.get('expr')) { an.setExpression(q.get('expr')); for (let i=0;i<40;i++) an.update(1/60); }
+an.update(1/60); ch.root.updateMatrixWorld(true);
+const H = st.body.height/100;
+const mode = q.get('view')||'face';
+const cam = new THREE.PerspectiveCamera(mode==='full'?26:18, innerWidth/innerHeight, .05, 50);
+const yaw=+(q.get('yaw')||0);
+if (mode==='full'){ const tx=an.pos.x, tz=an.pos.z; cam.position.set(tx+Math.sin(yaw)*5.2, H*.55, tz+Math.cos(yaw)*5.2); cam.lookAt(tx,H*.5,tz);} else { const hy=ch.rig.J.head[1]+0.045; const d=+(q.get('d')||1.0), lx=+(q.get('lx')||0), ly=+(q.get('ly')||0); cam.fov=+(q.get('fov')||18); cam.updateProjectionMatrix(); cam.position.set(Math.sin(yaw)*d+lx, hy+ly, Math.cos(yaw)*d); cam.lookAt(lx,hy+ly,0); }
+r.render(sc, cam); window.__done = true;
+</script></body></html>

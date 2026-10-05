@@ -1,0 +1,25 @@
+<!doctype html><html><body style="margin:0;background:#222"><canvas id="c" style="width:100vw;height:100vh"></canvas>
+<script type="module">
+import * as THREE from 'three';
+import { computeRig, BONE_NAMES } from '/src/character/rig.js';
+import { buildBody } from '/src/character/body.js';
+import { bodyDefaults } from '/src/data/params.js';
+const q = new URLSearchParams(location.search);
+const bp = bodyDefaults(); for (const [k,v] of q) if (k in bp) bp[k] = +v;
+const rig = computeRig(bp); const t0=performance.now(); const g = buildBody(rig, bp, null, 0.011);
+window.__ms = performance.now()-t0;
+const geo = new THREE.BufferGeometry();
+geo.setAttribute('position', new THREE.BufferAttribute(g.position,3)); geo.setAttribute('normal', new THREE.BufferAttribute(g.normal,3)); geo.setIndex(new THREE.BufferAttribute(g.index,1));
+// colour by dominant bone for debugging
+const col = new Float32Array(g.position.length); const hue = i => new THREE.Color().setHSL((i*0.137)%1, .6, .55);
+for (let v=0; v<g.position.length/3; v++){ const c=hue(g.skinIndex[v*4]); col.set([c.r,c.g,c.b], v*3); }
+geo.setAttribute('color', new THREE.BufferAttribute(col,3));
+const r = new THREE.WebGLRenderer({canvas:document.getElementById('c'), antialias:true}); r.setSize(innerWidth, innerHeight, false);
+const sc = new THREE.Scene(); sc.background = new THREE.Color(0x303034);
+const m = new THREE.Mesh(geo, new THREE.MeshStandardMaterial({vertexColors: q.has('bones'), color: 0xb08060, roughness:.6}));
+sc.add(m); sc.add(new THREE.HemisphereLight(0xffffff,0x444444,1.2)); const dl=new THREE.DirectionalLight(0xffffff,2.5); dl.position.set(1,2,3); sc.add(dl);
+const cam = new THREE.PerspectiveCamera(30, innerWidth/innerHeight, .1, 50);
+const yaw = +(q.get('yaw')||0), H = bp.height/100;
+cam.position.set(Math.sin(yaw)*5.2, H*0.52, Math.cos(yaw)*5.2); cam.lookAt(0,H*0.5,0);
+r.render(sc, cam); window.__done = true;
+</script></body></html>
